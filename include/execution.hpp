@@ -2396,7 +2396,7 @@ namespace std::execution {
               __set_value_t,
               __set_error_t>;
 
-        explicit __sender(_Sender&& __sndr)
+        explicit __sender(_Sender __sndr)
             : __shared_state_{make_shared<__sh_state_>((_Sender&&)__sndr)}
         {}
       };
