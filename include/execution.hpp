@@ -2396,9 +2396,8 @@ namespace std::execution {
               __set_value_t,
               __set_error_t>;
 
-        template <class _Sender2>
-        explicit __sender(_Sender2&& __sndr)
-            : __shared_state_{make_shared<__sh_state_>((_Sender2&&)__sndr)}
+        explicit __sender(_Sender&& __sndr)
+            : __shared_state_{make_shared<__sh_state_>((_Sender&&)__sndr)}
         {}
       };
 
