@@ -527,9 +527,6 @@ namespace std {
  * limitations under the License.
  */
 
-#include <__utility.hpp>
-#include <concepts.hpp>
-
 #include <functional>
 
 // A std::declval that doesn't instantiate templates:
@@ -735,8 +732,6 @@ namespace std {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <concepts.hpp>
 
 #if __has_include(<coroutine>)
 #include <coroutine>
