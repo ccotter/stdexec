@@ -526,7 +526,6 @@ namespace std {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
 #include <__utility.hpp>
 #include <concepts.hpp>
@@ -608,7 +607,6 @@ namespace std {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
 #include <version>
 
@@ -737,7 +735,6 @@ namespace std {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
 #include <concepts.hpp>
 
@@ -823,7 +820,6 @@ namespace std {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
 #include <version>
 #include <cassert>
