@@ -69,6 +69,10 @@ TEST_CASE("split executes predecessor sender once", "[adaptors][split]") {
     REQUIRE( counter == 1 );
   }
 }
+TEST_CASE("splitonce", "[adaptors][split]") {
+  auto snd = ex::split(ex::just());
+  ex::when_all(snd);
+}
 TEST_CASE("split passes lvalue references", "[adaptors][split]") {
   auto split = ex::split(ex::just(42));
   using split_t = decltype(split);
