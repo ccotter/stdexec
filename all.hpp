@@ -1,3 +1,8 @@
+// echo __utility.hpp functional.hpp concepts.hpp coroutine.hpp stop_token.hpp execution.hpp
+//    | tr ' ' '\n' | while read f; do
+//      cat include/$f | grep -E -v '#pragma once|#include.*hpp>' ;
+//    done > all.hpp
+
 /*
  * Copyright (c) NVIDIA
  *
@@ -13,7 +18,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
 #include <type_traits>
 #include <utility>
@@ -527,6 +531,7 @@ namespace std {
  * limitations under the License.
  */
 
+
 #include <functional>
 
 // A std::declval that doesn't instantiate templates:
@@ -733,6 +738,7 @@ namespace std {
  * limitations under the License.
  */
 
+
 #if __has_include(<coroutine>)
 #include <coroutine>
 namespace __coro = std;
@@ -938,8 +944,8 @@ namespace std {
     static constexpr uint8_t __stop_requested_flag_ = 1;
     static constexpr uint8_t __locked_flag_ = 2;
 
-    atomic<uint8_t> __state_{0};
-    __detail::__in_place_stop_callback_base* __callbacks_ = nullptr;
+    mutable atomic<uint8_t> __state_{0};
+    mutable __detail::__in_place_stop_callback_base* __callbacks_ = nullptr;
     thread::id __notifying_thread_;
   };
 
@@ -1077,7 +1083,7 @@ namespace std {
         __spin.__wait();
         __old_state = __state_.load(memory_order_relaxed);
       }
-    } while (!const_cast<atomic<uint8_t>&>(__state_).compare_exchange_weak(
+    } while (!__state_.compare_exchange_weak(
         __old_state,
         __old_state | __locked_flag_,
         memory_order_acquire,
@@ -1087,7 +1093,7 @@ namespace std {
   }
 
   inline void in_place_stop_source::__unlock_(uint8_t __old_state) const noexcept {
-    (void)const_cast<atomic<uint8_t>&>(__state_).store(__old_state, memory_order_release);
+    (void)__state_.store(__old_state, memory_order_release);
   }
 
   inline bool in_place_stop_source::__try_lock_unless_stop_requested_(
@@ -1106,7 +1112,7 @@ namespace std {
           __old_state = __state_.load(memory_order_relaxed);
         }
       }
-    } while (!const_cast<atomic<uint8_t>&>(__state_).compare_exchange_weak(
+    } while (!__state_.compare_exchange_weak(
         __old_state,
         __set_stop_requested ? (__locked_flag_ | __stop_requested_flag_) : __locked_flag_,
         memory_order_acq_rel,
@@ -1122,14 +1128,12 @@ namespace std {
       return false;
     }
 
-    auto& callbacks = *const_cast<__detail::__in_place_stop_callback_base**>(&this->__callbacks_);
-
-    __callbk->__next_ = callbacks;
-    __callbk->__prev_ptr_ = &callbacks;
-    if (callbacks != nullptr) {
-      callbacks->__prev_ptr_ = &__callbk->__next_;
+    __callbk->__next_ = __callbacks_;
+    __callbk->__prev_ptr_ = &__callbacks_;
+    if (__callbacks_ != nullptr) {
+      __callbacks_->__prev_ptr_ = &__callbk->__next_;
     }
-    callbacks = __callbk;
+    __callbacks_ = __callbk;
 
     __unlock_(0);
 
@@ -1206,6 +1210,21 @@ namespace std {
       } &&
       (!_Token::stop_possible());
 } // std
+/*
+ * Copyright (c) NVIDIA
+ *
+ * Licensed under the Apache License Version 2.0 with LLVM Exceptions
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *   https://llvm.org/LICENSE.txt
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include <atomic>
 #include <cassert>
@@ -1218,6 +1237,7 @@ namespace std {
 #include <tuple>
 #include <type_traits>
 #include <variant>
+
 
 #if defined(__clang__)
 #define _STRINGIZE(__arg) #__arg
