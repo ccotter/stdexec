@@ -21,6 +21,8 @@ message(STATUS "Conan compiler   : ${CONAN_SETTINGS_COMPILER} ${CONAN_SETTINGS_C
 message(STATUS "Conan libcxx     : ${CONAN_SETTINGS_COMPILER_LIBCXX}")
 message(STATUS)
 
+add_subdirectory(libunifex)
+
 # The main library
 add_library(P2300 INTERFACE)
 
@@ -156,3 +158,5 @@ def_example(example.retry "examples/retry.cpp")
 def_example(example.then "examples/then.cpp")
 def_example(example.server_theme.let_value "examples/server_theme/let_value.cpp")
 def_example(example.server_theme.on_transfer "examples/server_theme/on_transfer.cpp")
+def_example(example.unifex "examples/unifex.cpp")
+target_link_libraries(example.unifex unifex)
