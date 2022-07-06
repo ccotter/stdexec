@@ -5601,9 +5601,6 @@ _PRAGMA_POP()
 #include <utility>
 #include <variant>
 
-#include <coroutine.hpp>
-#include <execution.hpp>
-
 _PRAGMA_PUSH()
 _PRAGMA_IGNORE("-Wundefined-inline")
 
