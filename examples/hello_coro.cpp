@@ -43,8 +43,65 @@ task<std::optional<std::in_place_stop_token>> async_stop_token() {
   co_return co_await stopped_as_optional(get_stop_token());
 }
 
+#if __has_include(<coroutine>)
+#include <coroutine>
+namespace coro = std;
+#else
+#include <experimental/coroutine>
+namespace coro = std::experimental;
+#endif
+
+struct promise;
+struct coroutine : coro::coroutine_handle<promise>
+{
+  using promise_type = struct promise;
+
+  auto operator co_await() noexcept
+  {
+    struct awaitable
+    {
+      bool await_ready() noexcept { return false; }
+      coro::coroutine_handle<> await_suspend(coro::coroutine_handle<> c) {
+        return c;
+      }
+      decltype(auto) await_resume()
+      {
+        return 12345;
+      }
+    };
+
+    return awaitable{};
+  }
+};
+ 
+struct promise {
+  coroutine get_return_object()
+  { return {coroutine::from_promise(*this)}; }
+  coro::suspend_never initial_suspend() noexcept { return {}; }
+  coro::suspend_always final_suspend() noexcept { return {}; }
+  void return_void() { }
+  void unhandled_exception() {}
+};
+
+void let_example() {
+	auto sndr = let_stopped(
+			let_error(
+				[]() -> coroutine { co_return; }(),
+				[](auto&&...) noexcept { // lambda 1
+				return just();
+				}
+				) ,[]() noexcept { // lambda 2
+			return just();
+			}
+			);
+  auto [v] = std::this_thread::sync_wait([]() -> coroutine { co_return; }()).value();
+  std::cout << "coro=" << v << "\n";
+  //std::this_thread::sync_wait(std::move(sndr));
+}
+
 int main() try {
   // Awaitables are implicitly senders:
+  let_example();
   auto [i] = std::this_thread::sync_wait(async_answer2(just(42), just())).value();
   std::cout << "The answer is " << i.value() << '\n';
 } catch(std::exception & e) {
