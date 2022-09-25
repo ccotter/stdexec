@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if defined(__GNUC__) && !defined(__clang__)
-#else
 
 #include <catch2/catch.hpp>
 #include <execution.hpp>
@@ -51,7 +49,7 @@ TEST_CASE("then can be piped", "[adaptors][then]") {
 
 TEST_CASE("then returning void can we waited on", "[adaptors][then]") {
   ex::sender auto snd = ex::just() | ex::then([] {});
-  std::this_thread::sync_wait(std::move(snd));
+  _P2300::this_thread::sync_wait(std::move(snd));
 }
 
 TEST_CASE("then can be used to transform the value", "[adaptors][then]") {
@@ -140,10 +138,10 @@ TEST_CASE("then keeps error_types from input sender", "[adaptors][then]") {
   error_scheduler sched2{};
   error_scheduler<int> sched3{43};
 
+  check_err_types<type_array<>>( //
+      ex::transfer_just(sched1) | ex::then([]() noexcept {}));
   check_err_types<type_array<std::exception_ptr>>( //
-      ex::transfer_just(sched1) | ex::then([] {}));
-  check_err_types<type_array<std::exception_ptr>>( //
-      ex::transfer_just(sched2) | ex::then([] {}));
+      ex::transfer_just(sched2) | ex::then([]() noexcept {}));
   check_err_types<type_array<std::exception_ptr, int>>( //
       ex::transfer_just(sched3) | ex::then([] {}));
 }
@@ -173,5 +171,3 @@ TEST_CASE("then can be customized", "[adaptors][then]") {
              | ex::then([](std::string x) { return x + ", world"; });
   wait_for_value(std::move(snd), std::string{"hallo"});
 }
-
-#endif

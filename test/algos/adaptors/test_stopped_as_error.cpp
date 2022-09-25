@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#if defined(__GNUC__) && !defined(__clang__)
-#else
-
 #include <catch2/catch.hpp>
 #include <execution.hpp>
 #include <test_common/schedulers.hpp>
@@ -102,7 +99,7 @@ TEST_CASE("stopped_as_error keeps error_types from input sender", "[adaptors][st
   error_scheduler sched2{};
   error_scheduler<int> sched3{-1};
 
-  check_err_types<type_array<std::exception_ptr>>( //
+  check_err_types<type_array<>>( //
       ex::transfer_just(sched1, 11) | ex::stopped_as_error(std::exception_ptr{}));
   check_err_types<type_array<std::exception_ptr>>( //
       ex::transfer_just(sched2, 13) | ex::stopped_as_error(std::exception_ptr{}));
@@ -116,7 +113,7 @@ TEST_CASE("stopped_as_error can add more types to error_types", "[adaptors][stop
   error_scheduler sched2{};
   error_scheduler<int> sched3{-1};
 
-  check_err_types<type_array<std::exception_ptr>>( //
+  check_err_types<type_array<>>( //
       ex::transfer_just(sched1, 11) | ex::stopped_as_error(-1));
   check_err_types<type_array<std::exception_ptr, int>>( //
       ex::transfer_just(sched2, 13) | ex::stopped_as_error(-1));
@@ -124,7 +121,7 @@ TEST_CASE("stopped_as_error can add more types to error_types", "[adaptors][stop
   check_err_types<type_array<std::exception_ptr, int>>( //
       ex::transfer_just(sched3, 13) | ex::stopped_as_error(-1));
 
-  check_err_types<type_array<std::exception_ptr>>( //
+  check_err_types<type_array<>>( //
       ex::transfer_just(sched1, 11)                //
       | ex::stopped_as_error(-1)                   //
       | ex::stopped_as_error(std::string{"err"}));
@@ -142,5 +139,3 @@ TEST_CASE("stopped_as_error overrides sends_stopped to false", "[adaptors][stopp
   check_sends_stopped<false>( //
       ex::transfer_just(sched3, 3) | ex::stopped_as_error(-1));
 }
-
-#endif
