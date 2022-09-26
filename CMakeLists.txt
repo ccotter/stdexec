@@ -205,6 +205,8 @@ include(CTest)
 include(${Catch2_SOURCE_DIR}/contrib/Catch.cmake)
 catch_discover_tests(test.P2300)
 
+add_subdirectory(libunifex)
+
 # Set up examples
 function(def_example target sourceFile)
     add_executable(${target} ${sourceFile})
@@ -220,7 +222,7 @@ def_example(example.then "examples/then.cpp")
 def_example(example.server_theme.let_value "examples/server_theme/let_value.cpp")
 def_example(example.server_theme.on_transfer "examples/server_theme/on_transfer.cpp")
 def_example(example.unifex "examples/unifex.cpp")
-target_link_libraries(example.unifex unifex)
+target_link_libraries(example.unifex PRIVATE unifex)
 
 ##############################################################################
 # Install targets ------------------------------------------------------------

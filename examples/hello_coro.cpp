@@ -43,20 +43,6 @@ task<std::optional<std::in_place_stop_token>> async_stop_token() {
   co_return co_await stopped_as_optional(get_stop_token());
 }
 
-void let_example() {
-	auto sndr = let_stopped(
-			let_error(
-				[]() -> task<int> { co_return 5; }(),
-				[](auto&&) noexcept { // lambda 1
-				return just();
-				}
-				) ,[]() noexcept { // lambda 2
-			return just();
-			}
-			);
-  std::this_thread::sync_wait(std::move(sndr));
-}
-
 int main() try {
   // Awaitables are implicitly senders:
   auto [i] = _P2300::this_thread::sync_wait(async_answer2(just(42), just())).value();
