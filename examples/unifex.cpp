@@ -2,6 +2,8 @@
 #include <unifex/just.hpp>
 #include <unifex/just_done.hpp>
 #include <unifex/then.hpp>
+#include <unifex/done_as_optional.hpp>
+#include <unifex/sync_wait.hpp>
 
 #include <exception>
 #include <iostream>
@@ -76,21 +78,23 @@ struct sender_t {
       }
   };
 
-  template <typename Receiver>
+  template <typename Sender2, typename Receiver>
   struct State {
-      State(Sender sender, Receiver&& receiver) :
+      State(Sender2&& sender, Receiver&& receiver) :
           _sender(std::move(sender)),
           _unifex_receiver{std::move(receiver)},
-          _state(unifex::connect(_sender, _unifex_receiver))
+          _state(unifex::connect(std::move(_sender), _unifex_receiver))
       {
       }
 
       State(const State&) = delete;
       State& operator=(const State&) = delete;
 
-      Sender _sender;
+      Sender2 _sender;
+      static_assert(unifex::sender<std::decay_t<Sender2>>);
       UnifexReceiver<Receiver> _unifex_receiver;
-      unifex::connect_result_t<Sender, UnifexReceiver<Receiver>> _state;
+      static_assert(unifex::receiver<UnifexReceiver<Receiver>>);
+      unifex::connect_result_t<Sender2, UnifexReceiver<Receiver>> _state;
 
       friend auto tag_invoke(ex::start_t, State& self) noexcept {
           self._state.start();
@@ -100,7 +104,7 @@ struct sender_t {
   template <class Self, class Receiver>
       requires (std::same_as<sender_t, std::remove_cv_t<Self>>)
   friend auto tag_invoke(ex::connect_t, Self&& self, Receiver receiver) {
-    return State<Receiver>(((Self&&)self)._sender, std::move(receiver));
+    return State<unifex::member_t<Self, Sender>, Receiver>(((Self&&)self)._sender, std::move(receiver));
   }
 
   using completion_signatures = 
@@ -116,8 +120,8 @@ struct sender_t {
 
 struct from_unifex_t {
   template <class Sender>
-  auto operator()(Sender sender) const {
-    return sender_t<Sender>{std::move(sender)};
+  auto operator()(Sender&& sender) const {
+    return sender_t<Sender>{(Sender&&)sender};
   }
 };
 
@@ -161,10 +165,9 @@ int main() {
   }
 
   {
-    //auto snd = from_unifex(unifex::just_done());
-    auto snd = ex::just_stopped() | ex::stopped_as_optional();
+    auto snd = from_unifex(unifex::just(10) | unifex::done_as_optional());
     static_assert(ex::sender<decltype(snd)>);
-    //static_assert(ex::sender_of<decltype(snd), ex::set_stopped_t()>);
+    static_assert(ex::sender_of<decltype(snd), ex::set_value_t(std::optional<int>)>);
     auto v = std::this_thread::sync_wait(std::move(snd));
     CHECK(v.has_value());
   }
