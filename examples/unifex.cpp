@@ -1,6 +1,9 @@
 #include <execution.hpp>
 #include <unifex/just.hpp>
 #include <unifex/just_done.hpp>
+#include <unifex/let_value.hpp>
+#include <unifex/let_error.hpp>
+#include <unifex/let_done.hpp>
 #include <unifex/then.hpp>
 #include <unifex/done_as_optional.hpp>
 #include <unifex/sync_wait.hpp>
@@ -135,7 +138,11 @@ int main() {
   {
     auto snd = from_unifex(unifex::just(10));
     static_assert(ex::sender<decltype(snd)>);
-    static_assert(ex::sender_of<decltype(snd), ex::set_value_t(int)>);
+    static_assert(std::is_same_v<decltype(snd)::completion_signatures,
+        ex::completion_signatures<
+          ex::set_value_t(int),
+          ex::set_error_t(std::exception_ptr)>
+      >);
     auto [val] = std::this_thread::sync_wait(std::move(snd)).value();
     CHECK(val == 10);
   }
@@ -143,7 +150,11 @@ int main() {
   {
     auto snd = from_unifex(unifex::just(10, 20.0));
     static_assert(ex::sender<decltype(snd)>);
-    static_assert(ex::sender_of<decltype(snd), ex::set_value_t(int, double)>);
+    static_assert(std::is_same_v<decltype(snd)::completion_signatures,
+        ex::completion_signatures<
+          ex::set_value_t(int, double),
+          ex::set_error_t(std::exception_ptr)>
+      >);
     auto [a, b] = std::this_thread::sync_wait(std::move(snd)).value();
     CHECK(a == 10);
     CHECK(b == 20.);
@@ -152,7 +163,11 @@ int main() {
   {
     auto snd = from_unifex(unifex::just() | unifex::then([] { return 30; }));
     static_assert(ex::sender<decltype(snd)>);
-    static_assert(ex::sender_of<decltype(snd), ex::set_value_t(int)>);
+    static_assert(std::is_same_v<decltype(snd)::completion_signatures,
+        ex::completion_signatures<
+          ex::set_value_t(int),
+          ex::set_error_t(std::exception_ptr)>
+      >);
     auto [a] = std::this_thread::sync_wait(std::move(snd)).value();
     CHECK(a == 30);
   }
@@ -160,16 +175,47 @@ int main() {
   {
     auto snd = from_unifex(unifex::just() | unifex::then([] { throw std::runtime_error("Oops"); }));
     static_assert(ex::sender<decltype(snd)>);
-    static_assert(ex::sender_of<decltype(snd), ex::set_value_t()>);
+    static_assert(std::is_same_v<decltype(snd)::completion_signatures,
+        ex::completion_signatures<
+          ex::set_value_t(),
+          ex::set_error_t(std::exception_ptr)>
+      >);
     CHECK_THROW(std::this_thread::sync_wait(std::move(snd)).value(), std::runtime_error);
   }
 
   {
     auto snd = from_unifex(unifex::just(10) | unifex::done_as_optional());
     static_assert(ex::sender<decltype(snd)>);
-    static_assert(ex::sender_of<decltype(snd), ex::set_value_t(std::optional<int>)>);
+    static_assert(std::is_same_v<decltype(snd)::completion_signatures,
+        ex::completion_signatures<
+          ex::set_value_t(std::optional<int>),
+          ex::set_error_t(std::exception_ptr)>
+      >);
     auto v = std::this_thread::sync_wait(std::move(snd));
     CHECK(v.has_value());
+    CHECK(v == std::make_optional(std::make_tuple(10)));
+  }
+
+  {
+    auto snd = from_unifex(
+        unifex::just() |
+        unifex::then([]() -> int {
+          throw std::exception{};
+          return 10;
+        }) |
+        unifex::let_error([](auto&&) {
+          return unifex::just_done();
+        })
+    );
+    static_assert(ex::sender<decltype(snd)>);
+    static_assert(std::is_same_v<decltype(snd)::completion_signatures,
+        ex::completion_signatures<
+          ex::set_value_t(int),
+          ex::set_error_t(std::exception_ptr),
+          ex::set_stopped_t()>
+      >);
+    auto v = std::this_thread::sync_wait(std::move(snd));
+    CHECK(!v);
   }
 
   return 0;
