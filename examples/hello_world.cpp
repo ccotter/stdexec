@@ -1,5 +1,5 @@
 /*
- * Copyright (c) NVIDIA
+ * Copyright (c) 2021-2022 NVIDIA Corporation
  *
  * Licensed under the Apache License Version 2.0 with LLVM Exceptions
  * (the "License"); you may not use this file except in compliance with
@@ -16,15 +16,15 @@
 #include <iostream>
 
 // Pull in the reference implementation of P2300:
-#include <execution.hpp>
+#include <stdexec/execution.hpp>
 
-#include "./schedulers/static_thread_pool.hpp"
+#include "exec/static_thread_pool.hpp"
 
-using namespace std::execution;
-using _P2300::this_thread::sync_wait;
+using namespace stdexec;
+using stdexec::sync_wait;
 
 int main() {
-  example::static_thread_pool ctx{8};
+  exec::static_thread_pool ctx{8};
   scheduler auto sch = ctx.get_scheduler();                               // 1
 
   sender auto begin = schedule(sch);                                      // 2

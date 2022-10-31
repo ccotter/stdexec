@@ -1,5 +1,5 @@
 /*
- * Copyright (c) NVIDIA
+ * Copyright (c) 2021-2022 NVIDIA Corporation
  *
  * Licensed under the Apache License Version 2.0 with LLVM Exceptions
  * (the "License"); you may not use this file except in compliance with
@@ -15,7 +15,7 @@
  */
 
 // Pull in the reference implementation of P2300:
-#include <execution.hpp>
+#include <stdexec/execution.hpp>
 #include "./algorithms/then.hpp"
 
 #include <cstdio>
@@ -25,7 +25,7 @@
 int main() {
   auto x =
     then(
-      std::execution::just(42),
+      stdexec::just(42),
       [](int i) {
         std::printf("Got: %d\n", i);
         return i;
@@ -34,6 +34,6 @@ int main() {
 
   // prints:
   //   Got: 42
-  auto [a] = _P2300::this_thread::sync_wait(std::move(x)).value();
+  auto [a] = stdexec::sync_wait(std::move(x)).value();
   (void) a;
 }

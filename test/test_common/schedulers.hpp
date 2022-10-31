@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Lucian Radu Teodorescu
+ * Copyright (c) 2022 Lucian Radu Teodorescu
  *
  * Licensed under the Apache License Version 2.0 with LLVM Exceptions
  * (the "License"); you may not use this file except in compliance with
@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include <execution.hpp>
+#include <stdexec/execution.hpp>
 #include <test_common/type_helpers.hpp>
 
 #include <functional>
 #include <vector>
 
-namespace ex = std::execution;
+namespace ex = stdexec;
 
 //! Scheduler that will send impulses on user's request.
 //! One can obtain senders from this, connect them to receivers and start the operation states.
@@ -136,7 +136,7 @@ struct inline_scheduler {
       return {{}, (R &&) r};
     }
 
-    template <std::__one_of<ex::set_value_t, ex::set_error_t, ex::set_stopped_t> CPO>
+    template <stdexec::__one_of<ex::set_value_t, ex::set_error_t, ex::set_stopped_t> CPO>
     friend inline_scheduler tag_invoke(ex::get_completion_scheduler_t<CPO>, my_sender) noexcept {
       return {};
     }

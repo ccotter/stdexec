@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Lucian Radu Teodorescu
+ * Copyright (c) 2022 Lucian Radu Teodorescu
  *
  * Licensed under the Apache License Version 2.0 with LLVM Exceptions
  * (the "License"); you may not use this file except in compliance with
@@ -48,11 +48,11 @@
 #include <vector>
 
 // Pull in the reference implementation of P2300:
-#include <execution.hpp>
+#include <stdexec/execution.hpp>
 // Use a thread pool
-#include "../schedulers/static_thread_pool.hpp"
+#include "exec/static_thread_pool.hpp"
 
-namespace ex = std::execution;
+namespace ex = stdexec;
 
 struct http_request {
   std::string url_;
@@ -121,7 +121,7 @@ ex::sender auto stopped_to_response() {
 
 int main() {
   // Create a thread pool and get a scheduler from it
-  example::static_thread_pool pool{8};
+  exec::static_thread_pool pool{8};
   ex::scheduler auto sched = pool.get_scheduler();
 
   // Fake a couple of requests

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) NVIDIA
+ * Copyright (c) 2021-2022 NVIDIA Corporation
  *
  * Licensed under the Apache License Version 2.0 with LLVM Exceptions
  * (the "License"); you may not use this file except in compliance with
@@ -15,23 +15,22 @@
  */
 
 // Pull in the reference implementation of P2300:
-#include <execution.hpp>
-#include <async_scope.hpp>
+#include <stdexec/execution.hpp>
+#include <exec/async_scope.hpp>
 
-#include "./schedulers/static_thread_pool.hpp"
+#include "exec/env.hpp"
+#include "exec/static_thread_pool.hpp"
 
 #include <cstdio>
 
 ///////////////////////////////////////////////////////////////////////////////
 // Example code:
-using namespace std::execution;
-using namespace _P2519::execution;
-using _P2300::this_thread::sync_wait;
+using namespace stdexec;
+using stdexec::sync_wait;
 
 class noop_receiver : receiver_adaptor<noop_receiver> {
   friend receiver_adaptor<noop_receiver>;
   template <class... _As>
-      // requires constructible_from<__impl::__future_result_t<_Sender2>, _As...>
     void set_value(_As&&... ) noexcept {
     }
   void set_error(std::exception_ptr) noexcept {
@@ -39,13 +38,13 @@ class noop_receiver : receiver_adaptor<noop_receiver> {
   void set_stopped() noexcept {
   }
   auto get_env() const& {
-    return make_env(with(get_stop_token, std::never_stop_token{}));
+    return exec::make_env(exec::with(get_stop_token, stdexec::never_stop_token{}));
   }
 };
 
 int main() {
-  example::static_thread_pool ctx{1};
-  async_scope scope;
+  exec::static_thread_pool ctx{1};
+  exec::async_scope scope;
 
   scheduler auto sch = ctx.get_scheduler();                               // 1
 
@@ -54,7 +53,7 @@ int main() {
   sender auto printVoid = then(begin,
     []()noexcept { printf("void\n"); });                                  // 3
 
-  sender auto printEmpty = then(on(sch, scope.empty()),
+  sender auto printEmpty = then(on(sch, scope.on_empty()),
     []()noexcept{ printf("scope is empty\n"); });                         // 4
 
   printf("\n"
@@ -88,17 +87,18 @@ int main() {
     sender auto nest = scope.nest(begin);
     (void)nest;
   }
-  sync_wait(scope.empty());
+  sync_wait(scope.on_empty());
 
   {
     sender auto nest = scope.nest(begin);
     auto op = connect(std::move(nest), noop_receiver{});
+    (void)op;
   }
-  sync_wait(scope.empty());
+  sync_wait(scope.on_empty());
 
   {
     sender auto nest = scope.nest(begin);
     sync_wait(std::move(nest));
   }
-  sync_wait(scope.empty());
+  sync_wait(scope.on_empty());
 }

@@ -18,7 +18,19 @@ If:
 CompileFlags:
   Add:
     # Allow variadic CUDA functions
-    - -fcuda-allow-variadic-functions
+    - "-Xclang=-fcuda-allow-variadic-functions"
+
+---
+
+# Use clang++ in CUDA mode to provide intellisense for files with `nvexec` in their path
+If:
+  PathMatch: (include|examples|test)/nvexec.*
+CompileFlags:
+  Compiler: clang++
+  Add:
+    - -x
+    - cuda
+    - -D__NVCOMPILER
 
 ---
 
@@ -28,9 +40,14 @@ CompileFlags:
   Add:
     # report all errors
     - "-ferror-limit=0"
+    - "-D_NVHPC_CUDA=1"
+    - "-ftemplate-backtrace-limit=0"
   Remove:
+    - -stdpar
     # strip CUDA fatbin args
     - "-Xfatbin*"
+    - "-gpu=*"
+    - "--diag_suppress*"
     # strip CUDA arch flags
     - "-gencode*"
     - "--generate-code*"
@@ -47,3 +64,6 @@ Diagnostics:
   Suppress:
     - "variadic_device_fn"
     - "attributes_not_allowed"
+    # The NVHPC version of _NVCXX_EXPAND_PACK macro triggers this clang error.
+    # Temporarily suppressing it, but should probably fix
+    - "template_param_shadow"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Lucian Radu Teodorescu
+ * Copyright (c) 2022 Lucian Radu Teodorescu
  *
  * Licensed under the Apache License Version 2.0 with LLVM Exceptions
  * (the "License"); you may not use this file except in compliance with
@@ -16,15 +16,27 @@
 
 #pragma once
 
-#include <execution.hpp>
+#include <stdexec/execution.hpp>
 
-namespace ex = std::execution;
+namespace ex = stdexec;
 
 //! Used for to make a class non-movable without giving up aggregate initialization
 struct immovable {
   immovable() = default;
  private:
-  _P2300_IMMOVABLE(immovable);
+  STDEXEC_IMMOVABLE(immovable);
+};
+
+//! A move-only type
+struct movable {
+  movable(int value)
+    : value_(value)
+  {}
+  movable(movable&&) = default;
+  bool operator==(const movable&) const noexcept = default;
+  int value() {return value_;} // silence warning of unused private field
+private:
+  int value_;
 };
 
 //! Used for debugging, to generate errors to the console
