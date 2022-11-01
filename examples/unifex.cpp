@@ -143,7 +143,7 @@ int main() {
           ex::set_value_t(int),
           ex::set_error_t(std::exception_ptr)>
       >);
-    auto [val] = std::this_thread::sync_wait(std::move(snd)).value();
+    auto [val] = ex::sync_wait(std::move(snd)).value();
     CHECK(val == 10);
   }
 
@@ -155,7 +155,7 @@ int main() {
           ex::set_value_t(int, double),
           ex::set_error_t(std::exception_ptr)>
       >);
-    auto [a, b] = std::this_thread::sync_wait(std::move(snd)).value();
+    auto [a, b] = ex::sync_wait(std::move(snd)).value();
     CHECK(a == 10);
     CHECK(b == 20.);
   }
@@ -168,7 +168,7 @@ int main() {
           ex::set_value_t(int),
           ex::set_error_t(std::exception_ptr)>
       >);
-    auto [a] = std::this_thread::sync_wait(std::move(snd)).value();
+    auto [a] = ex::sync_wait(std::move(snd)).value();
     CHECK(a == 30);
   }
 
@@ -180,7 +180,7 @@ int main() {
           ex::set_value_t(),
           ex::set_error_t(std::exception_ptr)>
       >);
-    CHECK_THROW(std::this_thread::sync_wait(std::move(snd)).value(), std::runtime_error);
+    CHECK_THROW(ex::sync_wait(std::move(snd)).value(), std::runtime_error);
   }
 
   {
@@ -191,7 +191,7 @@ int main() {
           ex::set_value_t(std::optional<int>),
           ex::set_error_t(std::exception_ptr)>
       >);
-    auto v = std::this_thread::sync_wait(std::move(snd));
+    auto v = ex::sync_wait(std::move(snd));
     CHECK(v.has_value());
     CHECK(v == std::make_optional(std::make_tuple(10)));
   }
@@ -214,7 +214,7 @@ int main() {
           ex::set_error_t(std::exception_ptr),
           ex::set_stopped_t()>
       >);
-    auto v = std::this_thread::sync_wait(std::move(snd));
+    auto v = ex::sync_wait(std::move(snd));
     CHECK(!v);
   }
 
