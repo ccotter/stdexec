@@ -382,7 +382,7 @@ namespace stdexec {
     using __front = __t<__front_<_As...>>;
   template <class... _As>
       requires (sizeof...(_As) == 1)
-    using __single = __front<_As...>;
+    using __single_t = __front<_As...>;
   template <class _Ty>
     struct __single_or {
       template <class... _As>

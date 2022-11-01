@@ -633,11 +633,11 @@ namespace stdexec {
 
   template <class _Sender, class _Env = no_env>
     using __single_sender_value_t =
-      __value_types_of_t<_Sender, _Env, __single_or<void>, __q<__single>>;
+      __value_types_of_t<_Sender, _Env, __single_or<void>, __q<__single_t>>;
 
   template <class _Sender, class _Env = no_env>
     using __single_value_variant_sender_t =
-      value_types_of_t<_Sender, _Env, __types, __single>;
+      value_types_of_t<_Sender, _Env, __types, __single_t>;
 
   template <class _Sender, class _Env = no_env>
     concept __single_typed_sender =
@@ -5141,7 +5141,7 @@ namespace stdexec {
             _Sender,
             __env,
             stdexec::__decayed_tuple,
-            __single>;
+            __single_t>;
 
       template <class _Sender>
         using __sync_wait_with_variant_result_t =
