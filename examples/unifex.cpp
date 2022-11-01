@@ -1,4 +1,4 @@
-#include <execution.hpp>
+#include <stdexec/execution.hpp>
 #include <unifex/just.hpp>
 #include <unifex/just_done.hpp>
 #include <unifex/let_value.hpp>
@@ -29,7 +29,7 @@
         CHECK(did_throw); \
     } while (0)
 
-namespace ex = std::execution;
+namespace ex = stdexec;
 
 namespace _from_unifex {
 
