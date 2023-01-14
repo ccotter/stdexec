@@ -32,7 +32,7 @@ TEST_CASE("when_all returns a sender", "[adaptors][when_all]") {
 }
 TEST_CASE("when_all with environment returns a sender", "[adaptors][when_all]") {
   auto snd = ex::when_all(ex::just(3), ex::just(0.1415));
-  static_assert(ex::sender<decltype(snd), empty_env>);
+  static_assert(ex::sender_in<decltype(snd), empty_env>);
   (void)snd;
 }
 TEST_CASE("when_all simple example", "[adaptors][when_all]") {
