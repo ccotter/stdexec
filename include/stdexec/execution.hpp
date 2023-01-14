@@ -575,16 +575,21 @@ namespace stdexec {
   // [execution.senders]
   // NOT TO SPEC (YET)
   template <class _Sender, class _Env>
-    concept __sender =
+    concept __sender_base =
       __valid<__completion_signatures_of_t, _Sender, _Env> &&
       __valid_completion_signatures<__completion_signatures_of_t<_Sender, _Env>, _Env> &&
       move_constructible<remove_cvref_t<_Sender>> &&
       constructible_from<remove_cvref_t<_Sender>, _Sender>;
 
-  template <class _Sender, class _Env = no_env>
+  template <class _Sender>
     concept sender =
-      __sender<_Sender, no_env> &&
-      __sender<_Sender, _Env>;
+      // TODO - get_attrs
+      move_constructible<remove_cvref_t<_Sender>> &&
+      constructible_from<remove_cvref_t<_Sender>, _Sender>;
+
+  template <class _Sender, class _Env = __empty_env>
+    concept sender_in =
+      sender<_Sender>;
 
   // __checked_completion_signatures is for catching logic bugs in a typed
   // sender's metadata. If sender<S> and sender<S, Ctx> are both true, then they
@@ -605,7 +610,7 @@ namespace stdexec {
     };
 
   template <class _Sender, class _Env = no_env>
-      requires sender<_Sender, _Env>
+      requires sender_in<_Sender, _Env>
     using completion_signatures_of_t =
       __t<__checked_completion_signatures<_Sender, _Env>>;
 
@@ -647,7 +652,7 @@ namespace stdexec {
         __remove<__, _Variant>>;
 
   template <class _Tag, class _Sender, class _Env, class _Tuple, class _Variant>
-      requires sender<_Sender, _Env>
+      requires sender_in<_Sender, _Env>
     using __gather_completions_for =
       __gather_signal<_Tag, completion_signatures_of_t<_Sender, _Env>, _Tuple, _Variant>;
 
@@ -655,14 +660,14 @@ namespace stdexec {
             class _Env = no_env,
             class _Tuple = __q<__decayed_tuple>,
             class _Variant = __q<__variant>>
-      requires sender<_Sender, _Env>
+      requires sender_in<_Sender, _Env>
     using __value_types_of_t =
       __gather_completions_for<set_value_t, _Sender, _Env, _Tuple, _Variant>;
 
   template <class _Sender,
             class _Env = no_env,
             class _Variant = __q<__variant>>
-      requires sender<_Sender, _Env>
+      requires sender_in<_Sender, _Env>
     using __error_types_of_t =
       __gather_completions_for<set_error_t, _Sender, _Env, __q<__midentity>, _Variant>;
 
@@ -670,19 +675,19 @@ namespace stdexec {
             class _Env = no_env,
             template <class...> class _Tuple = __decayed_tuple,
             template <class...> class _Variant = __variant>
-      requires sender<_Sender, _Env>
+      requires sender_in<_Sender, _Env>
     using value_types_of_t =
       __value_types_of_t<_Sender, _Env, __q<_Tuple>, __q<_Variant>>;
 
   template <class _Sender,
             class _Env = no_env,
             template <class...> class _Variant = __variant>
-      requires sender<_Sender, _Env>
+      requires sender_in<_Sender, _Env>
     using error_types_of_t =
       __error_types_of_t<_Sender, _Env, __q<_Variant>>;
 
   template <class _Tag, class _Sender, class _Env = no_env>
-      requires sender<_Sender, _Env>
+      requires sender_in<_Sender, _Env>
     using __count_of =
       __compl_sigs::__for_all_sigs<
         completion_signatures_of_t<_Sender, _Env>,
@@ -709,12 +714,12 @@ namespace stdexec {
 
   template <class _Sender, class _Env = no_env>
     concept __single_typed_sender =
-      sender<_Sender, _Env> &&
+      sender_in<_Sender, _Env> &&
       __valid<__single_sender_value_t, _Sender, _Env>;
 
   template <class _Sender, class _Env = no_env>
     concept __single_value_variant_sender =
-      sender<_Sender, _Env> &&
+      sender_in<_Sender, _Env> &&
       __valid<__single_value_variant_sender_t, _Sender, _Env>;
 
   template <class... Errs>
@@ -722,7 +727,7 @@ namespace stdexec {
 
   template <class _Sender, class _Env = no_env>
     concept __nofail_sender =
-      sender<_Sender, _Env> &&
+      sender_in<_Sender, _Env> &&
       (__v<error_types_of_t<_Sender, _Env, __nofail>>);
 
   /////////////////////////////////////////////////////////////////////////////
@@ -759,7 +764,7 @@ namespace stdexec {
       class _SetValue = __q<__default_set_value>,
       class _SetError = __q<__default_set_error>,
       __valid_completion_signatures<_Env> _SetStopped = completion_signatures<set_stopped_t()>>
-        requires sender<_Sender, _Env>
+        requires sender_in<_Sender, _Env>
     using __make_completion_signatures =
       decltype(__make<_Sender, _Env, _Sigs, _SetValue, _SetError, _SetStopped>(0));
   } // namespace __compl_sigs
@@ -790,7 +795,7 @@ namespace stdexec {
   //    template <class...> class SetValue = __default_set_value,
   //    template <class> class SetError = __default_set_error,
   //    class SetStopped = completion_signatures<set_stopped_t()>>
-  //      requires sender<Sndr, Env>
+  //      requires sender_in<Sndr, Env>
   //  using make_completion_signatures =
   //    completion_signatures< ... >;
   //  ```
@@ -842,7 +847,7 @@ namespace stdexec {
       __compl_sigs::__default_set_error,
     __valid_completion_signatures<_Env> _SetStopped =
       completion_signatures<set_stopped_t()>>
-      requires sender<_Sender, _Env>
+      requires sender_in<_Sender, _Env>
   using make_completion_signatures =
     __make_completion_signatures<_Sender, _Env, _Sigs, __q<_SetValue>, __q<_SetError>, _SetStopped>;
 
@@ -1343,7 +1348,7 @@ namespace stdexec {
 
     template <class _Sender, class _Receiver>
       concept __connectable_with_tag_invoke =
-        sender<_Sender, env_of_t<_Receiver>> &&
+        sender_in<_Sender, env_of_t<_Receiver>> &&
         __receiver_from<_Receiver, _Sender> &&
         tag_invocable<connect_t, _Sender, _Receiver>;
 
@@ -1469,7 +1474,7 @@ namespace stdexec {
   // [exec.snd]
   template <class _Sender, class _Receiver>
     concept sender_to =
-      sender<_Sender, env_of_t<_Receiver>> &&
+      sender_in<_Sender, env_of_t<_Receiver>> &&
       __receiver_from<_Receiver, _Sender> &&
       requires (_Sender&& __sndr, _Receiver&& __rcvr) {
         connect((_Sender&&) __sndr, (_Receiver&&) __rcvr);
@@ -1482,7 +1487,7 @@ namespace stdexec {
 
   template<class _Sender, class _SetSig, class _Env = no_env>
     concept sender_of =
-      sender<_Sender, _Env> &&
+      sender_in<_Sender, _Env> &&
       same_as<
         __types<_SetSig>,
         __gather_completions_for<
@@ -4611,7 +4616,7 @@ namespace stdexec {
   // [execution.senders.adaptors.into_variant]
   namespace __into_variant {
     template <class _Sender, class _Env>
-        requires sender<_Sender, _Env>
+        requires sender_in<_Sender, _Env>
       using __into_variant_result_t =
         value_types_of_t<_Sender, _Env>;
 
@@ -4763,7 +4768,7 @@ namespace stdexec {
 
     template <class _Sender, class _Env>
       concept __max1_sender =
-        sender<_Sender, _Env> &&
+        sender_in<_Sender, _Env> &&
         __valid<__value_types_of_t, _Sender, _Env, __mconst<int>, __msingle_or<void>>;
 
     template <class _Env, class _Sender>
@@ -5309,7 +5314,7 @@ namespace stdexec {
           __transform<__q<decay_t>, _Continuation>,
           __q<__msingle>>;
 
-    template <stdexec::sender<__env> _Sender>
+    template <stdexec::sender_in<__env> _Sender>
       using __sync_wait_result_t =
         __sync_wait_result_impl<_Sender, __q<std::tuple>>;
 
@@ -5408,7 +5413,7 @@ namespace stdexec {
           (!__tag_invocable_with_completion_scheduler<
             sync_wait_t, set_value_t, _Sender>) &&
           (!tag_invocable<sync_wait_t, _Sender>) &&
-          sender<_Sender, __env> &&
+          sender_in<_Sender, __env> &&
           sender_to<_Sender, __receiver_t<_Sender>>
       auto operator()(_Sender&& __sndr) const
         -> std::optional<__sync_wait_result_t<_Sender>> {
@@ -5438,7 +5443,7 @@ namespace stdexec {
     ////////////////////////////////////////////////////////////////////////////
     // [execution.senders.consumers.sync_wait_with_variant]
     struct sync_wait_with_variant_t {
-      template <sender<__env> _Sender>
+      template <sender_in<__env> _Sender>
         requires
           __tag_invocable_with_completion_scheduler<
             sync_wait_with_variant_t, set_value_t, _Sender>
@@ -5466,7 +5471,7 @@ namespace stdexec {
         return tag_invoke(
           sync_wait_with_variant_t{}, std::move(__sched), (_Sender&&) __sndr);
       }
-      template <sender<__env> _Sender>
+      template <sender_in<__env> _Sender>
         requires
           (!__tag_invocable_with_completion_scheduler<
             sync_wait_with_variant_t, set_value_t, _Sender>) &&
@@ -5483,7 +5488,7 @@ namespace stdexec {
 
         return tag_invoke(sync_wait_with_variant_t{}, (_Sender&&) __sndr);
       }
-      template <sender<__env> _Sender>
+      template <sender_in<__env> _Sender>
         requires
           (!__tag_invocable_with_completion_scheduler<
             sync_wait_with_variant_t, set_value_t, _Sender>) &&

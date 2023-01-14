@@ -136,8 +136,11 @@ namespace std {
     inline constexpr stdexec::start_t start{};
 
     // [exec.snd], senders
-    template <class _Sender, class _Env = stdexec::no_env>
-      concept sender /*STDEXEC_STD_DEPRECATED*/ = stdexec::sender<_Sender, _Env>;
+    template <class _Sender>
+      concept sender /*STDEXEC_STD_DEPRECATED*/ = stdexec::sender<_Sender>;
+
+    template <class _Sender, class _Env = stdexec::__empty_env>
+      concept sender_in /*STDEXEC_STD_DEPRECATED*/ = stdexec::sender_in<_Sender, _Env>;
 
     template <class _Sender, class _Receiver>
       concept sender_to /*STDEXEC_STD_DEPRECATED*/ = stdexec::sender_to<_Sender, _Receiver>;
