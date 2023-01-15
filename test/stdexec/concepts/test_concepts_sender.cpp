@@ -164,12 +164,7 @@ void has_type(T&&) {
 
 TEST_CASE("check for subsumption relationships between the sender concepts", "[concepts][sender]") {
   ::has_type<not_a_sender_tag>(::test_subsumption(42));
-  auto x = ex::get_scheduler();
-  //auto x = ec_sender{};
-  using X = decltype(x);
-  static_assert(ex::sender_in<X, empty_env>);
-  static_assert(ex::sender_of<X, ex::set_value_t(), empty_env>);
-  //::has_type<sender_no_env_tag>(::test_subsumption(ex::get_scheduler()));
+  ::has_type<sender_no_env_tag>(::test_subsumption(ex::get_scheduler()));
   ::has_type<sender_env_tag>(::test_subsumption(ex::just(42)));
   ::has_type<sender_of_tag>(::test_subsumption(ex::just()));
 }

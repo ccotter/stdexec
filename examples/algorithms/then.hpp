@@ -69,6 +69,10 @@ struct _then_sender {
   friend auto tag_invoke(stdexec::get_completion_signatures_t, _then_sender&&, Env)
     -> _completions_t<Env>;
 
+  friend decltype(auto) tag_invoke(stdexec::get_attrs_t, const _then_sender& self) noexcept {
+    return stdexec::get_attrs(self.s_);
+  }
+
   // Connect:
   template<class R>
     //requires stdexec::receiver_of<R, _completions_t<stdexec::env_of_t<R>>>

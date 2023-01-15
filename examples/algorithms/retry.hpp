@@ -109,6 +109,10 @@ struct _retry_sender {
   friend _op<S, R> tag_invoke(stdexec::connect_t, _retry_sender&& self, R r) {
     return {(S&&) self.s_, (R&&) r};
   }
+
+  friend decltype(auto) tag_invoke(stdexec::get_attrs_t, const _retry_sender& self) noexcept {
+    return stdexec::get_attrs(self.s_);
+  }
 };
 
 template<stdexec::sender S>

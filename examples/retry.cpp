@@ -22,6 +22,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // Example code:
+struct empty_attrs {};
+
 struct fail_some {
   using completion_signatures =
     stdexec::completion_signatures<
@@ -45,6 +47,10 @@ struct fail_some {
   template <class R>
   friend op<R> tag_invoke(stdexec::connect_t, fail_some, R r) {
     return {std::move(r)};
+  }
+
+  friend empty_attrs tag_invoke(stdexec::get_attrs_t, const fail_some&) noexcept {
+    return {};
   }
 };
 

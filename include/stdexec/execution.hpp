@@ -645,7 +645,6 @@ namespace stdexec {
 
   template <class _Sender>
     concept sender =
-      // TODO - get_attrs
       requires (const remove_cvref_t<_Sender>& __sender) {
         { get_attrs(__sender) } -> queryable;
       } &&
@@ -654,7 +653,9 @@ namespace stdexec {
 
   template <class _Sender, class _Env = __empty_env>
     concept sender_in =
-      sender<_Sender> && true;
+      sender<_Sender> && requires(_Sender&& __sender, _Env&& __env) {
+        { get_completion_signatures((_Sender&&)__sender, (_Env&&)__env) } -> __valid_completion_signatures<_Env>;
+      };
 
   // __checked_completion_signatures is for catching logic bugs in a typed
   // sender's metadata. If sender<S> and sender<S, Ctx> are both true, then they // TODO
@@ -1522,7 +1523,7 @@ namespace stdexec {
   template <class _Sig>
     using __tag_of_sig_t = decltype(stdexec::__tag_of_sig_((_Sig*) nullptr));
 
-  template<class _Sender, class _SetSig, class _Env = no_env>
+  template<class _Sender, class _SetSig, class _Env = __empty_env>
     concept sender_of =
       sender_in<_Sender, _Env> &&
       same_as<
@@ -5305,9 +5306,9 @@ namespace stdexec {
           return {{}, (_Receiver&&) __rcvr};
         }
 
-        template <__none_of<no_env> _Env>
+        template <class _Env>
           friend auto tag_invoke(get_completion_signatures_t, __sender, _Env)
-            -> __completions_t<_Env>;
+            -> completion_signatures<set_value_t(__call_result_t<_Tag, _Env>), set_error_t(std::exception_ptr)>;
 
         friend __empty_attrs tag_invoke(get_attrs_t, const __sender&) noexcept {
           return {};
