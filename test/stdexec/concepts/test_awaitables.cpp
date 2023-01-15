@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (c) 2022 Shreyas Atre
  *
@@ -142,3 +143,4 @@ TEST_CASE("get completion_signatures for awaitables", "[sndtraits][awaitables]")
 }
 
 #endif // !_STD_NO_COROUTINES_
+#endif

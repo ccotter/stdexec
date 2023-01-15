@@ -131,13 +131,26 @@ namespace stdexec {
 
     struct get_attrs_t {
       template <class _Sender>
-          requires tag_invocable<get_attrs_t, const _Sender&>
+      auto impl() {
+        if constexpr (tag_invocable<get_attrs_t, const _Sender&>) {
+        } else if constexpr (__awaitable<_Sender>) {
+        }
+      }
+      template <class _Sender>
+        requires (tag_invocable<get_attrs_t, const _Sender&> && !__awaitable<_Sender>)
         constexpr auto operator()(const _Sender& __sender) const
           noexcept(nothrow_tag_invocable<get_attrs_t, const _Sender&>)
           -> tag_invoke_result_t<get_attrs_t, const _Sender&> {
           return tag_invoke(*this, __sender);
         }
+      template <class _Sender>
+        requires (!tag_invocable<get_attrs_t, const _Sender&> && __awaitable<_Sender>)
+        constexpr auto operator()(const _Sender& __sender) const
+          noexcept -> __empty_attrs {
+          return {}; // TODO - how to support awaitables?
+        }
 
+        // ???
         friend constexpr bool tag_invoke(forwarding_sender_query_t, const get_attrs_t&) noexcept {
           return true;
         }
@@ -1985,7 +1998,7 @@ namespace stdexec {
               return {{}, ((__t&&) __sndr).__vals_, (_Receiver&&) __rcvr};
             }
 
-          friend auto tag_invoke(get_attrs_t, const __t&) noexcept -> __empty_attrs{
+          friend auto tag_invoke(get_attrs_t, const __t&) noexcept -> __empty_attrs {
             return {};
           }
         };
@@ -2609,6 +2622,14 @@ namespace stdexec {
           template <__decays_to<__t> _Self, class _Env>
           friend auto tag_invoke(get_completion_signatures_t, _Self&&, _Env)
             -> __completion_signatures<_Self, _Env> requires true;
+
+          template <tag_category<forwarding_sender_query> _Tag>
+            requires __callable<_Tag, const _Sender&>
+          friend auto tag_invoke(_Tag __tag, const __t& __self)
+            noexcept(__nothrow_callable<_Tag, const _Sender&>)
+            -> __call_result_if_t<tag_category<_Tag, forwarding_sender_query>, _Tag, const _Sender&> {
+            return ((_Tag&&) __tag)(__self.__sndr_);
+          }
 
           template <tag_category<forwarding_sender_query> _Tag, class _Error>
             requires __callable<_Tag, const _Sender&, _Error>
@@ -4033,6 +4054,10 @@ namespace stdexec {
             return __self.__connect_((_Receiver &&) __rcvr);
           }
 
+          friend __empty_attrs tag_invoke(get_attrs_t, const __schedule_task&) noexcept {
+            return {};
+          }
+
           template <class _Receiver>
           __operation<_Receiver> __connect_(_Receiver&& __rcvr) const {
             return {&__loop_->__head_, __loop_, (_Receiver &&) __rcvr};
@@ -5138,6 +5163,10 @@ namespace stdexec {
               return {((_Self&&) __self).__sndrs_, (_Receiver&&) __rcvr};
             }
 
+          friend __empty_attrs tag_invoke(get_attrs_t, const __t&) noexcept {
+            return {};
+          }
+
           template <__decays_to<__t> _Self, class _Env>
             friend auto tag_invoke(get_completion_signatures_t, _Self&&, _Env)
               -> dependent_completion_signatures<_Env>;
@@ -5279,6 +5308,10 @@ namespace stdexec {
         template <__none_of<no_env> _Env>
           friend auto tag_invoke(get_completion_signatures_t, __sender, _Env)
             -> __completions_t<_Env>;
+
+        friend __empty_attrs tag_invoke(get_attrs_t, const __sender&) noexcept {
+          return {};
+        }
       };
 
     struct __read_t {

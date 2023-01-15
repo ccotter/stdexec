@@ -65,6 +65,9 @@ namespace exec {
           stdexec::completion_signatures<
             stdexec::set_value_t(),
             stdexec::set_stopped_t()>;
+        friend stdexec::__empty_attrs tag_invoke(stdexec::get_attrs_t, const sender&) {
+          return {};
+        }
        private:
         template <typename Receiver>
         operation<stdexec::__x<std::decay_t<Receiver>>>
@@ -341,6 +344,10 @@ namespace exec {
                 Env,
                 with_error_invoke_t<Fun, stdexec::__copy_cvref_t<Self, Sender>, Env>,
                 stdexec::__q<set_value_t>>;
+
+          friend stdexec::__empty_attrs tag_invoke(stdexec::get_attrs_t, const bulk_sender&) {
+            return {};
+          }
 
           template <class Self, class Receiver>
             using bulk_op_state_t =

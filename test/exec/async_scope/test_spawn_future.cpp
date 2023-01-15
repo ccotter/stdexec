@@ -40,6 +40,10 @@ struct throwing_sender {
     throw std::logic_error("cannot connect");
     return {std::forward<Receiver>(rcvr)};
   }
+
+  friend empty_attrs tag_invoke(ex::get_attrs_t, const throwing_sender&) {
+    return {};
+  }
 };
 
 TEST_CASE("spawn_future will execute its work", "[async_scope][spawn_future]") {

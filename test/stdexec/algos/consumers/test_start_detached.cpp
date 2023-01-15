@@ -93,6 +93,10 @@ struct custom_sender {
   friend void tag_invoke(ex::start_detached_t, custom_sender sndr) {
     *sndr.called = true;
   }
+
+  friend empty_attrs tag_invoke(ex::get_attrs_t, const custom_sender&) {
+    return {};
+  }
 };
 
 struct custom_scheduler {

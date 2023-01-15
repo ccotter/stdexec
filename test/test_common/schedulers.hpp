@@ -85,6 +85,10 @@ struct impulse_scheduler {
         ex::get_completion_scheduler_t<ex::set_value_t>, my_sender) {
       return {};
     }
+
+    friend empty_attrs tag_invoke(ex::get_attrs_t, const my_sender&) {
+      return {};
+    }
   };
 
   public:
