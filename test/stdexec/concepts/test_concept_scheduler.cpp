@@ -16,6 +16,7 @@
 
 #include <catch2/catch.hpp>
 #include <stdexec/execution.hpp>
+#include <test_common/type_helpers.hpp>
 
 namespace ex = stdexec;
 
@@ -29,6 +30,10 @@ struct my_scheduler {
 
     template <typename CPO>
     friend my_scheduler tag_invoke(ex::get_completion_scheduler_t<CPO>, my_sender) {
+      return {};
+    }
+
+    friend empty_attrs tag_invoke(ex::get_attrs_t, const my_sender&) {
       return {};
     }
   };
@@ -64,6 +69,10 @@ struct my_scheduler_except {
     friend my_scheduler_except tag_invoke(ex::get_completion_scheduler_t<CPO>, my_sender) {
       return {};
     }
+
+    friend empty_attrs tag_invoke(ex::get_attrs_t, const my_sender&) {
+      return {};
+    }
   };
 
   friend my_sender tag_invoke(ex::schedule_t, my_scheduler_except) {
@@ -91,6 +100,10 @@ struct noeq_sched {
     friend noeq_sched tag_invoke(ex::get_completion_scheduler_t<CPO>, my_sender) {
       return {};
     }
+
+    friend empty_attrs tag_invoke(ex::get_attrs_t, const my_sender&) {
+      return {};
+    }
   };
 
   friend my_sender tag_invoke(ex::schedule_t, noeq_sched) { return {}; }
@@ -110,6 +123,10 @@ struct sched_no_completion {
 
     friend sched_no_completion tag_invoke(
         ex::get_completion_scheduler_t<ex::set_error_t>, my_sender) {
+      return {};
+    }
+
+    friend empty_attrs tag_invoke(ex::get_attrs_t, const my_sender&) {
       return {};
     }
   };

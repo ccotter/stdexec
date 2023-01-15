@@ -50,6 +50,9 @@ struct type_array {};
 //! Used as a default empty context
 struct empty_env {};
 
+//! Used as a default empty attributes
+struct empty_attrs {};
+
 //! Check that the value_types of a sender matches the expected type
 template <typename ExpectedValType, typename Env = empty_env, typename S>
 inline void check_val_types(S snd) {

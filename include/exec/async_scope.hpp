@@ -664,7 +664,7 @@ namespace exec {
           return nest_result_t<_Constrained>{&__impl_, (_Constrained&&) __c};
         }
 
-      template <__movable_value _Env = __empty_env, sender<__env_t<_Env>> _Sender>
+      template <__movable_value _Env = __empty_env, sender_in<__env_t<_Env>> _Sender>
           requires sender_to<nest_result_t<_Sender>, __spawn_receiver_t<_Env>>
         void spawn(_Sender&& __sndr, _Env __env = {}) {
           using __op_t = __spawn_operation_t<nest_result_t<_Sender>, _Env>;
@@ -674,7 +674,7 @@ namespace exec {
           stdexec::start(*new __op_t{nest((_Sender&&) __sndr), (_Env&&) __env, &__impl_});
         }
 
-      template <__movable_value _Env = __empty_env, sender<__env_t<_Env>> _Sender>
+      template <__movable_value _Env = __empty_env, sender_in<__env_t<_Env>> _Sender>
         __future_t<_Sender, _Env> spawn_future(_Sender&& __sndr, _Env __env = {}) {
           using __state_t = __future_state<nest_result_t<_Sender>, _Env>;
           auto __state =

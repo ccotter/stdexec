@@ -80,7 +80,7 @@ void test_awaitable_sender1(Signatures*, Awaiter&&) {
 template <typename Signatures>
 void test_awaitable_sender2(Signatures*) {
   static_assert(ex::sender<awaitable_sender_2>);
-  static_assert(ex::sender<awaitable_sender_2, promise<__coro::suspend_always>>);
+  static_assert(ex::sender_in<awaitable_sender_2, promise<__coro::suspend_always>>);
 
   static_assert(stdexec::__awaitable<awaitable_sender_2>);
   static_assert(stdexec::__awaitable<awaitable_sender_2, promise<__coro::suspend_always>>);
@@ -99,7 +99,7 @@ void test_awaitable_sender2(Signatures*) {
 template <typename Signatures>
 void test_awaitable_sender3(Signatures*) {
   static_assert(ex::sender<awaitable_sender_3>);
-  static_assert(ex::sender<awaitable_sender_3, promise<awaiter>>);
+  static_assert(ex::sender_in<awaitable_sender_3, promise<awaiter>>);
 
   static_assert(stdexec::__awaiter<awaiter>);
   static_assert(stdexec::__awaitable<awaitable_sender_3>);

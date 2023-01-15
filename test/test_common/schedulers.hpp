@@ -140,6 +140,10 @@ struct inline_scheduler {
     friend inline_scheduler tag_invoke(ex::get_completion_scheduler_t<CPO>, my_sender) noexcept {
       return {};
     }
+
+    friend empty_attrs tag_invoke(ex::get_attrs_t, const my_sender&) {
+      return {};
+    }
   };
 
   friend my_sender tag_invoke(ex::schedule_t, inline_scheduler) { return {}; }
@@ -177,6 +181,9 @@ struct error_scheduler {
     friend error_scheduler tag_invoke(ex::get_completion_scheduler_t<ex::set_value_t>, my_sender) {
       return {};
     }
+    friend empty_attrs tag_invoke(ex::get_attrs_t, const my_sender&) {
+      return {};
+    }
   };
 
   E err_{};
@@ -207,6 +214,10 @@ struct stopped_scheduler {
 
     template <typename CPO>
     friend stopped_scheduler tag_invoke(ex::get_completion_scheduler_t<CPO>, my_sender) {
+      return {};
+    }
+
+    friend empty_attrs tag_invoke(ex::get_attrs_t, const my_sender&) {
       return {};
     }
   };

@@ -35,10 +35,11 @@ struct my_sender0 {
       ex::set_stopped_t()>;
 
   friend oper tag_invoke(ex::connect_t, my_sender0, empty_recv::recv0&& r) { return {}; }
+  friend empty_attrs tag_invoke(ex::get_attrs_t, const my_sender0& ) { return {}; }
 };
 TEST_CASE("type w/ proper types, is a sender & sender", "[concepts][sender]") {
   REQUIRE(ex::sender<my_sender0>);
-  REQUIRE(ex::sender<my_sender0, empty_env>);
+  REQUIRE(ex::sender_in<my_sender0, empty_env>);
 
   REQUIRE(ex::sender_of<my_sender0, ex::set_value_t()>);
   REQUIRE(ex::sender_of<my_sender0, ex::set_error_t(std::exception_ptr)>);
@@ -60,11 +61,12 @@ struct my_sender_int {
       ex::set_stopped_t()>;
 
   friend oper tag_invoke(ex::connect_t, my_sender_int, empty_recv::recv_int&& r) { return {}; }
+  friend empty_attrs tag_invoke(ex::get_attrs_t, const my_sender_int& ) { return {}; }
 };
 
 TEST_CASE("my_sender_int is a sender & sender", "[concepts][sender]") {
   REQUIRE(ex::sender<my_sender_int>);
-  REQUIRE(ex::sender<my_sender_int, empty_env>);
+  REQUIRE(ex::sender_in<my_sender_int, empty_env>);
   REQUIRE(ex::sender_of<my_sender_int, ex::set_value_t(int)>);
   REQUIRE(ex::sender_of<my_sender_int, ex::set_value_t(int), empty_env>);
 }
@@ -104,6 +106,7 @@ struct multival_sender {
       ex::set_error_t(std::exception_ptr)>;
 
   friend oper tag_invoke(ex::connect_t, multival_sender, empty_recv::recv_int&& r) { return {}; }
+  friend empty_attrs tag_invoke(ex::get_attrs_t, const multival_sender& ) { return {}; }
 };
 TEST_CASE("check completion signatures for sender that advertises multiple sets of values",
     "[concepts][sender]") {
@@ -121,6 +124,7 @@ struct ec_sender {
       ex::set_error_t(int)>;
 
   friend oper tag_invoke(ex::connect_t, ec_sender, empty_recv::recv_int&& r) { return {}; }
+  friend empty_attrs tag_invoke(ex::get_attrs_t, const ec_sender& ) { return {}; }
 };
 TEST_CASE("check completion signatures for sender that also supports error codes", "[concepts][sender]") {
   check_val_types<type_array<type_array<>>>(ec_sender{});
@@ -144,7 +148,7 @@ template <ex::sender T>
 sender_no_env_tag test_subsumption(T&&) {
   return {};
 }
-template <ex::sender<empty_env> T>
+template <ex::sender_in<empty_env> T>
 sender_env_tag test_subsumption(T&&) {
   return {};
 }

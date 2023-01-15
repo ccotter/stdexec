@@ -16,6 +16,8 @@
 
 #include <stdexec/execution.hpp>
 
+#include <test_common/type_helpers.hpp>
+
 namespace ex = stdexec;
 
 enum class scope_t { free_standing, scheduler };
@@ -28,6 +30,10 @@ struct cpo_t {
       ex::set_value_t(),                                   //
       ex::set_error_t(std::exception_ptr),                 //
       ex::set_stopped_t()>;
+
+  friend empty_attrs tag_invoke(ex::get_attrs_t, const cpo_t&) {
+    return {};
+  }
 };
 
 template <class CPO>
@@ -40,6 +46,10 @@ struct free_standing_sender_t {
   template <class... Ts>
   friend auto tag_invoke(CPO, const free_standing_sender_t& self, Ts&&...) noexcept {
     return cpo_t<scope_t::free_standing>{};
+  }
+
+  friend empty_attrs tag_invoke(ex::get_attrs_t, const free_standing_sender_t &) {
+    return {};
   }
 };
 
@@ -54,6 +64,10 @@ struct scheduler_t {
     template <stdexec::__one_of<ex::set_value_t, CompletionSignals...> Tag>
     friend scheduler_t tag_invoke(
         ex::get_completion_scheduler_t<Tag>, const sender_t&) noexcept {
+      return {};
+    }
+
+    friend empty_attrs tag_invoke(ex::get_attrs_t, const sender_t&) {
       return {};
     }
   };

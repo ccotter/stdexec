@@ -102,6 +102,52 @@ namespace stdexec {
   using __get_completion_signatures::get_completion_signatures_t;
 
   /////////////////////////////////////////////////////////////////////////////
+  // [exec.snd_queries]
+  namespace __sender_queries {
+    struct forwarding_sender_query_t {
+      template <class _Tag>
+      constexpr bool operator()(_Tag __tag) const noexcept {
+        if constexpr (nothrow_tag_invocable<forwarding_sender_query_t, _Tag> &&
+                      std::is_invocable_r_v<bool, tag_t<tag_invoke>,
+                                            forwarding_sender_query_t, _Tag>) {
+          return tag_invoke(*this, (_Tag&&) __tag);
+        } else {
+          return false;
+        }
+      }
+    };
+  } // namespace __sender_queries
+  using __sender_queries::forwarding_sender_query_t;
+  inline constexpr forwarding_sender_query_t forwarding_sender_query{};
+
+  /////////////////////////////////////////////////////////////////////////////
+  // get_attrs
+  namespace __attrs {
+
+    struct __empty_attrs {
+      using __t = __empty_attrs;
+      using __id = __empty_attrs;
+    };
+
+    struct get_attrs_t {
+      template <class _Sender>
+          requires tag_invocable<get_attrs_t, const _Sender&>
+        constexpr auto operator()(const _Sender& __sender) const
+          noexcept(nothrow_tag_invocable<get_attrs_t, const _Sender&>)
+          -> tag_invoke_result_t<get_attrs_t, const _Sender&> {
+          return tag_invoke(*this, __sender);
+        }
+
+        friend constexpr bool tag_invoke(forwarding_sender_query_t, const get_attrs_t&) noexcept {
+          return true;
+        }
+    };
+  } // namespace __attrs
+  inline constexpr __attrs::get_attrs_t get_attrs{};
+  using __attrs::get_attrs_t;
+  using __attrs::__empty_attrs;
+
+  /////////////////////////////////////////////////////////////////////////////
   // env_of
   namespace __env {
     struct __empty_env {
@@ -581,35 +627,32 @@ namespace stdexec {
       move_constructible<remove_cvref_t<_Sender>> &&
       constructible_from<remove_cvref_t<_Sender>, _Sender>;
 
+  template <class _Ty>
+    concept queryable = destructible<_Ty>;
+
   template <class _Sender>
     concept sender =
       // TODO - get_attrs
+      requires (const remove_cvref_t<_Sender>& __sender) {
+        { get_attrs(__sender) } -> queryable;
+      } &&
       move_constructible<remove_cvref_t<_Sender>> &&
       constructible_from<remove_cvref_t<_Sender>, _Sender>;
 
   template <class _Sender, class _Env = __empty_env>
     concept sender_in =
-      sender<_Sender>;
+      sender<_Sender> && true;
 
   // __checked_completion_signatures is for catching logic bugs in a typed
-  // sender's metadata. If sender<S> and sender<S, Ctx> are both true, then they
+  // sender's metadata. If sender<S> and sender<S, Ctx> are both true, then they // TODO
   // had better report the same metadata. This completion signatures wrapper
   // enforces that at compile time.
-  template <class _Sender, class _Env>
+  template <class _Sender, class _Env = __empty_env>
     struct __checked_completion_signatures {
-     private:
-      using _WithEnv = __completion_signatures_of_t<_Sender, _Env>;
-      using _WithoutEnv = __completion_signatures_of_t<_Sender, no_env>;
-      static_assert(
-        __one_of<
-          _WithoutEnv,
-          _WithEnv,
-          dependent_completion_signatures<no_env>>);
-     public:
-      using __t = _WithEnv;
+      using __t = __completion_signatures_of_t<_Sender, _Env>;
     };
 
-  template <class _Sender, class _Env = no_env>
+  template <class _Sender, class _Env = __empty_env>
       requires sender_in<_Sender, _Env>
     using completion_signatures_of_t =
       __t<__checked_completion_signatures<_Sender, _Env>>;
@@ -1263,25 +1306,6 @@ namespace stdexec {
   struct __connect_awaitable_t {};
 #endif
   inline constexpr __connect_awaitable_t __connect_awaitable{};
-
-  /////////////////////////////////////////////////////////////////////////////
-  // [exec.snd_queries]
-  namespace __sender_queries {
-    struct forwarding_sender_query_t {
-      template <class _Tag>
-      constexpr bool operator()(_Tag __tag) const noexcept {
-        if constexpr (nothrow_tag_invocable<forwarding_sender_query_t, _Tag> &&
-                      std::is_invocable_r_v<bool, tag_t<tag_invoke>,
-                                            forwarding_sender_query_t, _Tag>) {
-          return tag_invoke(*this, (_Tag&&) __tag);
-        } else {
-          return false;
-        }
-      }
-    };
-  } // namespace __sender_queries
-  using __sender_queries::forwarding_sender_query_t;
-  inline constexpr forwarding_sender_query_t forwarding_sender_query{};
 
   namespace __debug {
     struct __is_debug_env_t {
@@ -1960,6 +1984,10 @@ namespace stdexec {
               -> __operation_t<_Receiver> {
               return {{}, ((__t&&) __sndr).__vals_, (_Receiver&&) __rcvr};
             }
+
+          friend auto tag_invoke(get_attrs_t, const __t&) noexcept -> __empty_attrs{
+            return {};
+          }
         };
       };
 
@@ -5248,9 +5276,6 @@ namespace stdexec {
           return {{}, (_Receiver&&) __rcvr};
         }
 
-        template <class _Env>
-          friend auto tag_invoke(get_completion_signatures_t, __sender, _Env)
-            -> dependent_completion_signatures<_Env>;
         template <__none_of<no_env> _Env>
           friend auto tag_invoke(get_completion_signatures_t, __sender, _Env)
             -> __completions_t<_Env>;
