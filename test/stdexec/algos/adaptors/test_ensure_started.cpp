@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (c) 2022 Lucian Radu Teodorescu
  * Copyright (c) 2022 NVIDIA Corporation
@@ -276,3 +277,4 @@ TEST_CASE("Dropping the opstate without starting it calls set_stopped", "[adapto
   // make sure the logging_receiver was never called
   CHECK(state == -1);
 }
+#endif

@@ -1016,7 +1016,7 @@ namespace stdexec {
   template <class _Scheduler>
     concept __sender_has_completion_scheduler =
       requires(_Scheduler&& __sched, const get_completion_scheduler_t<set_value_t>&& __tag) {
-        { tag_invoke(std::move(__tag), schedule((_Scheduler&&) __sched)) }
+        { tag_invoke(std::move(__tag), get_attrs(schedule((_Scheduler&&) __sched))) }
           -> same_as<remove_cvref_t<_Scheduler>>;
       };
 
@@ -1544,16 +1544,16 @@ namespace stdexec {
           return true;
         }
 
-        template <sender _Sender>
-          requires tag_invocable<get_completion_scheduler_t, const _Sender&> &&
-            scheduler<tag_invoke_result_t<get_completion_scheduler_t, const _Sender&>>
-        auto operator()(const _Sender& __sndr) const noexcept
-            -> tag_invoke_result_t<get_completion_scheduler_t, const _Sender&> {
+        template <queryable _Queryable>
+          requires tag_invocable<get_completion_scheduler_t, const _Queryable&> &&
+            scheduler<tag_invoke_result_t<get_completion_scheduler_t, const _Queryable&>>
+        auto operator()(const _Queryable& __queryable) const noexcept
+            -> tag_invoke_result_t<get_completion_scheduler_t, const _Queryable&> {
           // NOT TO SPEC:
           static_assert(
-            nothrow_tag_invocable<get_completion_scheduler_t, const _Sender&>,
+            nothrow_tag_invocable<get_completion_scheduler_t, const _Queryable&>,
             "get_completion_scheduler<_CPO> should be noexcept");
-          return tag_invoke(*this, __sndr);
+          return tag_invoke(*this, __queryable);
         }
       };
   } // namespace __sender_queries
@@ -1565,11 +1565,11 @@ namespace stdexec {
 
   template <class _Sender, class _CPO>
     concept __has_completion_scheduler =
-      __callable<get_completion_scheduler_t<_CPO>, _Sender>;
+      __callable<get_completion_scheduler_t<_CPO>, __call_result_t<get_attrs_t, const _Sender&>>;
 
   template <class _Sender, class _CPO>
     using __completion_scheduler_for =
-      __call_result_t<get_completion_scheduler_t<_CPO>, _Sender>;
+      __call_result_t<get_completion_scheduler_t<_CPO>, __call_result_t<get_attrs_t, const _Sender&>>;
 
   template <class _Fun, class _CPO, class _Sender, class... _As>
     concept __tag_invocable_with_completion_scheduler =
@@ -2506,13 +2506,8 @@ namespace stdexec {
           friend auto tag_invoke(get_completion_signatures_t, _Self&&, _Env)
             -> __completion_signatures<_Self, _Env> requires true;
 
-          // forward sender queries:
-          template <tag_category<forwarding_sender_query> _Tag, class... _As>
-            requires __callable<_Tag, const _Sender&, _As...>
-          friend auto tag_invoke(_Tag __tag, const __t& __self, _As&&... __as)
-            noexcept(__nothrow_callable<_Tag, const _Sender&, _As...>)
-            -> __call_result_if_t<tag_category<_Tag, forwarding_sender_query>, _Tag, const _Sender&, _As...> {
-            return ((_Tag&&) __tag)(__self.__sndr_, (_As&&) __as...);
+          friend auto tag_invoke(get_attrs_t, const __t& __self) noexcept(__nothrow_callable<get_attrs_t, const _Sender&>) -> __call_result_t<get_attrs_t, const _Sender&> {
+            return get_attrs(__self.__sndr_);
           }
         };
       };
@@ -2533,7 +2528,7 @@ namespace stdexec {
         requires __tag_invocable_with_completion_scheduler<then_t, set_value_t, _Sender, _Fun>
       sender auto operator()(_Sender&& __sndr, _Fun __fun) const
         noexcept(nothrow_tag_invocable<then_t, __completion_scheduler_for<_Sender, set_value_t>, _Sender, _Fun>) {
-        auto __sched = get_completion_scheduler<set_value_t>(__sndr);
+        auto __sched = get_completion_scheduler<set_value_t>(get_attrs(__sndr));
         return tag_invoke(then_t{}, std::move(__sched), (_Sender&&) __sndr, (_Fun&&) __fun);
       }
       template <sender _Sender, __movable_value _Fun>
@@ -2624,6 +2619,7 @@ namespace stdexec {
           friend auto tag_invoke(get_completion_signatures_t, _Self&&, _Env)
             -> __completion_signatures<_Self, _Env> requires true;
 
+          /*
           template <tag_category<forwarding_sender_query> _Tag>
             requires __callable<_Tag, const _Sender&>
           friend auto tag_invoke(_Tag __tag, const __t& __self)
@@ -2639,6 +2635,12 @@ namespace stdexec {
             -> __call_result_if_t<tag_category<_Tag, forwarding_sender_query>, _Tag, const _Sender&, _Error> {
             return ((_Tag&&) __tag)(__self.__sndr_, (_Error&&) __err);
           }
+          */
+
+          friend auto tag_invoke(get_attrs_t, const __t& __self) noexcept(__nothrow_callable<get_attrs_t, const _Sender&>)
+            -> __call_result_t<get_attrs_t, const _Sender&> {
+            return get_attrs(__self.__sndr_);
+          }
         };
       };
 
@@ -2650,7 +2652,7 @@ namespace stdexec {
         requires __tag_invocable_with_completion_scheduler<upon_error_t, set_error_t, _Sender, _Fun>
       sender auto operator()(_Sender&& __sndr, _Fun __fun) const
         noexcept(nothrow_tag_invocable<upon_error_t, __completion_scheduler_for<_Sender, set_error_t>, _Sender, _Fun>) {
-        auto __sched = get_completion_scheduler<set_error_t>(__sndr);
+        auto __sched = get_completion_scheduler<set_error_t>(get_attrs(__sndr));
         return tag_invoke(upon_error_t{}, std::move(__sched), (_Sender&&) __sndr, (_Fun&&) __fun);
       }
       template <sender _Sender, __movable_value _Fun>
@@ -2766,7 +2768,7 @@ namespace stdexec {
           __callable<_Fun>
       sender auto operator()(_Sender&& __sndr, _Fun __fun) const
         noexcept(nothrow_tag_invocable<upon_stopped_t, __completion_scheduler_for<_Sender, set_stopped_t>, _Sender, _Fun>) {
-        auto __sched = get_completion_scheduler<set_stopped_t>(__sndr);
+        auto __sched = get_completion_scheduler<set_stopped_t>(get_attrs(__sndr));
         return tag_invoke(upon_stopped_t{}, std::move(__sched), (_Sender&&) __sndr, (_Fun&&) __fun);
       }
       template <sender _Sender, __movable_value _Fun>
@@ -2908,7 +2910,7 @@ namespace stdexec {
         requires __tag_invocable_with_completion_scheduler<bulk_t, set_value_t, _Sender, _Shape, _Fun>
       sender auto operator()(_Sender&& __sndr, _Shape __shape, _Fun __fun) const
         noexcept(nothrow_tag_invocable<bulk_t, __completion_scheduler_for<_Sender, set_value_t>, _Sender, _Shape, _Fun>) {
-        auto __sched = get_completion_scheduler<set_value_t>(__sndr);
+        auto __sched = get_completion_scheduler<set_value_t>(get_attrs(__sndr));
         return tag_invoke(bulk_t{}, std::move(__sched), (_Sender&&) __sndr, (_Shape&&) __shape, (_Fun&&) __fun);
       }
       template <sender _Sender, integral _Shape, __movable_value _Fun>
@@ -3780,7 +3782,7 @@ namespace stdexec {
           requires __tag_invocable_with_completion_scheduler<_LetTag, set_value_t, _Sender, _Fun>
         sender auto operator()(_Sender&& __sndr, _Fun __fun) const
           noexcept(nothrow_tag_invocable<_LetTag, __completion_scheduler_for<_Sender, set_value_t>, _Sender, _Fun>) {
-          auto __sched = get_completion_scheduler<set_value_t>(__sndr);
+          auto __sched = get_completion_scheduler<set_value_t>(get_attrs(__sndr));
           return tag_invoke(_LetTag{}, std::move(__sched), (_Sender&&) __sndr, (_Fun&&) __fun);
         }
         template <sender _Sender, __movable_value _Fun>
@@ -4033,6 +4035,16 @@ namespace stdexec {
         using __id = __scheduler;
         bool operator==(const __scheduler&) const noexcept = default;
 
+        struct __attrs {
+          run_loop* __loop_;
+
+          template <class _CPO>
+          friend __scheduler
+          tag_invoke(get_completion_scheduler_t<_CPO>, const __attrs& __self) noexcept {
+            return __scheduler{__self.__loop_};
+          }
+        };
+
        private:
         struct __schedule_task {
           using __t = __schedule_task;
@@ -4055,19 +4067,13 @@ namespace stdexec {
             return __self.__connect_((_Receiver &&) __rcvr);
           }
 
-          friend __empty_attrs tag_invoke(get_attrs_t, const __schedule_task&) noexcept {
-            return {};
+          friend __attrs tag_invoke(get_attrs_t, const __schedule_task& __self) noexcept {
+            return {__self.__loop_};
           }
 
           template <class _Receiver>
           __operation<_Receiver> __connect_(_Receiver&& __rcvr) const {
             return {&__loop_->__head_, __loop_, (_Receiver &&) __rcvr};
-          }
-
-          template <class _CPO>
-          friend __scheduler
-          tag_invoke(get_completion_scheduler_t<_CPO>, const __schedule_task& __self) noexcept {
-            return __scheduler{__self.__loop_};
           }
 
           explicit __schedule_task(run_loop* __loop) noexcept
@@ -4350,20 +4356,24 @@ namespace stdexec {
         using _Sender = stdexec::__t<_SenderId>;
 
         struct __t {
+
+          struct __attrs {
+            _Scheduler __sched_;
+            template <__one_of<set_value_t, set_stopped_t> _Tag>
+            friend _Scheduler tag_invoke(get_completion_scheduler_t<_Tag>, const __attrs& __self) noexcept {
+              return __self.__sched_;
+            }
+          };
+
           using __id = __sender;
-          _Scheduler __sched_;
+          __attrs __attrs_;
           _Sender __sndr_;
 
           template <__decays_to<__t> _Self, class _Receiver>
             requires sender_to<__copy_cvref_t<_Self, _Sender>, _Receiver>
           friend auto tag_invoke(connect_t, _Self&& __self, _Receiver __rcvr)
               -> stdexec::__t<__operation1<_SchedulerId, stdexec::__id<__copy_cvref_t<_Self, _Sender>>, stdexec::__id<_Receiver>>> {
-            return {__self.__sched_, ((_Self&&) __self).__sndr_, (_Receiver&&) __rcvr};
-          }
-
-          template <__one_of<set_value_t, set_stopped_t> _Tag>
-          friend _Scheduler tag_invoke(get_completion_scheduler_t<_Tag>, const __t& __self) noexcept {
-            return __self.__sched_;
+            return {__self.__attrs_.__sched_, ((_Self&&) __self).__sndr_, (_Receiver&&) __rcvr};
           }
 
           template <tag_category<forwarding_sender_query> _Tag, class... _As>
@@ -4372,6 +4382,10 @@ namespace stdexec {
             noexcept(__nothrow_callable<_Tag, const _Sender&, _As...>)
             -> __call_result_if_t<tag_category<_Tag, forwarding_sender_query>, _Tag, const _Sender&, _As...> {
             return ((_Tag&&) __tag)(__self.__sndr_, (_As&&) __as...);
+          }
+
+          friend auto tag_invoke(get_attrs_t, const __t& self) noexcept -> const __attrs& {
+            return self.__attrs_;
           }
 
           template <class... _Errs>
@@ -4416,7 +4430,7 @@ namespace stdexec {
       template <scheduler _Scheduler, sender _Sender>
       auto operator()(_Scheduler&& __sched, _Sender&& __sndr) const
         -> stdexec::__t<__sender<stdexec::__id<decay_t<_Scheduler>>, stdexec::__id<decay_t<_Sender>>>> {
-        return {(_Scheduler&&) __sched, (_Sender&&) __sndr};
+        return {{(_Scheduler&&) __sched}, (_Sender&&) __sndr};
       }
     };
   } // namespace __schedule_from
@@ -4432,7 +4446,7 @@ namespace stdexec {
       tag_invoke_result_t<transfer_t, __completion_scheduler_for<_Sender, set_value_t>, _Sender, _Scheduler>
       operator()(_Sender&& __sndr, _Scheduler&& __sched) const
         noexcept(nothrow_tag_invocable<transfer_t, __completion_scheduler_for<_Sender, set_value_t>, _Sender, _Scheduler>) {
-        auto csch = get_completion_scheduler<set_value_t>(__sndr);
+        auto csch = get_completion_scheduler<set_value_t>(get_attrs(__sndr));
         return tag_invoke(transfer_t{}, std::move(csch), (_Sender&&) __sndr, (_Scheduler&&) __sched);
       }
       template <sender _Sender, scheduler _Scheduler>
@@ -5451,7 +5465,7 @@ namespace stdexec {
           __completion_scheduler_for<_Sender, set_value_t>,
           _Sender>) {
         auto __sched =
-          get_completion_scheduler<set_value_t>(__sndr);
+          get_completion_scheduler<set_value_t>(get_attrs(__sndr));
         return tag_invoke(sync_wait_t{}, std::move(__sched), (_Sender&&) __sndr);
       }
 
@@ -5526,7 +5540,7 @@ namespace stdexec {
           "must be sync-wait-with-variant-type<S, sync-wait-env>");
 
         auto __sched =
-          get_completion_scheduler<set_value_t>(__sndr);
+          get_completion_scheduler<set_value_t>(get_attrs(__sndr));
         return tag_invoke(
           sync_wait_with_variant_t{}, std::move(__sched), (_Sender&&) __sndr);
       }

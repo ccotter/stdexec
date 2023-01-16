@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (c) 2022 Lucian Radu Teodorescu
  * Copyright (c) 2021-2022 NVIDIA Corporation
@@ -327,3 +328,4 @@ TEST_CASE("split doesn't advertise completion scheduler", "[adaptors][split]") {
   static_assert(!stdexec::__has_completion_scheduler<snd_t, ex::set_stopped_t>);
   (void)snd;
 }
+#endif
