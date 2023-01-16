@@ -27,10 +27,17 @@ struct my_scheduler {
         ex::set_error_t(std::exception_ptr), //
         ex::set_stopped_t()>;
 
-    template <typename CPO>
-    friend my_scheduler tag_invoke(ex::get_completion_scheduler_t<CPO>, my_sender) {
+    struct attrs {
+      template <typename CPO>
+      friend my_scheduler tag_invoke(ex::get_completion_scheduler_t<CPO>, const attrs&) {
+        return {};
+      }
+    };
+
+    friend attrs tag_invoke(ex::get_attrs_t, const my_sender&) noexcept {
       return {};
     }
+
   };
 
   friend my_sender tag_invoke(ex::schedule_t, my_scheduler) { return {}; }
@@ -60,8 +67,14 @@ struct my_scheduler_except {
         ex::set_error_t(std::exception_ptr), //
         ex::set_stopped_t()>;
 
-    template <typename CPO>
-    friend my_scheduler_except tag_invoke(ex::get_completion_scheduler_t<CPO>, my_sender) {
+    struct attrs {
+      template <typename CPO>
+      friend my_scheduler_except tag_invoke(ex::get_completion_scheduler_t<CPO>, const attrs&) {
+        return {};
+      }
+    };
+
+    friend attrs tag_invoke(ex::get_attrs_t, const my_sender&) noexcept {
       return {};
     }
   };
