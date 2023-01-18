@@ -103,6 +103,10 @@ namespace exec {
         template <__none_of<no_env> _Env>
           friend auto tag_invoke(get_completion_signatures_t, __sender, _Env)
             -> __completions_t<_Env>;
+
+        friend stdexec::__empty_attrs tag_invoke(get_attrs_t, const __sender&) noexcept {
+          return {};
+      }
       };
 
     struct __read_with_default_t {
@@ -204,6 +208,10 @@ namespace exec {
             -> completion_signatures_of_t<
                 __copy_cvref_t<_Self, _Sender>,
                 make_env_t<_Env, _Withs...>>;
+
+        friend stdexec::__empty_attrs tag_invoke(get_attrs_t, const __sender&) noexcept {
+          return {};
+        }
       };
 
     struct __write_t {
