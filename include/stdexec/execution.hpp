@@ -670,6 +670,7 @@ namespace stdexec {
 
   template <class _Sender, class _Env = no_env>
     concept sender =
+      requires (const _Sender& __sender) { { get_attrs(__sender) } -> queryable; } &&
       __sender<_Sender, no_env> &&
       __sender<_Sender, _Env>;
 
@@ -2050,6 +2051,10 @@ namespace stdexec {
               -> __operation_t<_Receiver> {
               return {{}, ((__t&&) __sndr).__vals_, (_Receiver&&) __rcvr};
             }
+
+          friend __empty_attrs tag_invoke(get_attrs_t, const __t&) noexcept {
+            return {};
+          }
         };
       };
 
@@ -3221,6 +3226,14 @@ namespace stdexec {
           _Sender __sndr_;
           std::shared_ptr<__sh_state_> __shared_state_;
 
+          struct __attrs {
+            // NOT TO SPEC
+            // The split sender should copy the attributes from the input sender.
+          };
+          friend __attrs tag_invoke(get_attrs_t, const __t&) noexcept {
+            return {};
+          }
+
         public:
           using __id = __sender;
 
@@ -3536,6 +3549,14 @@ namespace stdexec {
           template <same_as<__t> _Self, class _OtherEnv>
             friend auto tag_invoke(get_completion_signatures_t, _Self&&, _OtherEnv)
               -> __completions_t<_Self>;
+
+          struct __attrs {
+            // NOT TO SPEC
+            // The split sender should copy the attributes from the input sender.
+          };
+          friend __attrs tag_invoke(get_attrs_t, const __t&) noexcept {
+            return {};
+          }
 
          public:
           using __id = __sender;

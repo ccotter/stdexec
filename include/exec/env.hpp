@@ -199,6 +199,14 @@ namespace exec {
           return ((_Tag&&) __tag)(__self.__sndr_, (_As&&) __as...);
         }
 
+        template <stdexec::same_as<stdexec::get_attrs_t> _Tag>
+          requires stdexec::__callable<_Tag, const _Sender&>
+        friend auto tag_invoke(_Tag, const __sender& __self)
+          noexcept(stdexec::__nothrow_callable<_Tag, const _Sender&>)
+          -> stdexec::__call_result_t<_Tag, const _Sender&> {
+          return stdexec::get_attrs(__self.__sndr_);
+        }
+
         template <__decays_to<__sender> _Self, class _Env>
           friend auto tag_invoke(get_completion_signatures_t, _Self&&, _Env)
             -> completion_signatures_of_t<

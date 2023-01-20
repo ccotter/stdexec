@@ -390,6 +390,14 @@ namespace exec {
             -> stdexec::__call_result_if_t<stdexec::tag_category<Tag, stdexec::forwarding_sender_query>, Tag, const Sender&, As...> {
             return ((Tag&&) tag)(self.sndr_, (As&&) as...);
           }
+
+          template <stdexec::same_as<stdexec::get_attrs_t> _Tag>
+            requires stdexec::__callable<_Tag, const Sender&>
+          friend auto tag_invoke(_Tag, const bulk_sender& self)
+            noexcept(stdexec::__nothrow_callable<_Tag, const Sender&>)
+            -> stdexec::__call_result_t<_Tag, const Sender&> {
+            return stdexec::get_attrs(self.sndr_);
+      }
         };
 
       friend sender
