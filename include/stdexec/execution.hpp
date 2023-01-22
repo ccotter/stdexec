@@ -1609,6 +1609,9 @@ namespace stdexec {
   namespace __sender_queries {
     template <__one_of<set_value_t, set_error_t, set_stopped_t> _CPO>
       struct get_completion_scheduler_t {
+        friend constexpr bool tag_invoke(forwarding_sender_query_t, const get_completion_scheduler_t&) noexcept {
+          return true;
+        }
         friend constexpr bool tag_invoke(forwarding_query_t, const get_completion_scheduler_t&) noexcept {
           return true;
         }
@@ -5535,7 +5538,7 @@ namespace stdexec {
           (!__tag_invocable_with_completion_scheduler<
             sync_wait_t, set_value_t, _Sender>) &&
           tag_invocable<sync_wait_t, _Sender>
-      tag_invoke_result_t<sync_wait_t, _Sender>
+      decltype(auto)
       operator()(_Sender&& __sndr) const noexcept(
         nothrow_tag_invocable<sync_wait_t, _Sender>) {
         return tag_invoke(sync_wait_t{}, (_Sender&&) __sndr);
