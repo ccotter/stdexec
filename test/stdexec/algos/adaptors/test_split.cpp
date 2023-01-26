@@ -302,11 +302,76 @@ struct copy_and_movable_type {
   copy_and_movable_type(int v) : val(v) {}
   int val;
 };
+#if 0
 TEST_CASE("split move only sender", "[adaptors][split]") {
   auto multishot = 
+      //ex::split(ex::just(copy_and_movable_type(10)));
+      //ex::split(ex::just(move_only_type(10)) | ex::then([](auto&&) { return 0; }));
       ex::split(ex::just(move_only_type(10)));
+#if 0
+  static constexpr bool V = ex::receiver_of<
+    stdexec::__sync_wait::__receiver<move_only_type>::__t,
+    ex::completion_signatures_of_t<
+      stdexec::__split::__sender<stdexec::__just::__sender<move_only_type>, stdexec::__env::__empty_env>::__t, ex::env_of_t<stdexec::__sync_wait::__receiver<move_only_type>::__t> > >;
+  static_assert(!V);
+
+  static_assert(ex::receiver_of<
+      stdexec::__sync_wait::__receiver<move_only_type>::__t,
+      stdexec::completion_signatures<
+        stdexec::__receivers::set_error_t (const std::exception_ptr &),
+        stdexec::__receivers::set_stopped_t (),
+        stdexec::__receivers::set_value_t (const move_only_type &)>
+      >);
+#endif
+
+  using X = ex::completion_signatures_of_t<
+    stdexec::__split::__sender<stdexec::__just::__sender<move_only_type>, stdexec::__env::__empty_env>::__t,
+    ex::env_of_t<stdexec::__sync_wait::__receiver<move_only_type>::__t>
+  >;
+  X::okok;
+  using Sender = decltype(multishot);
+  using Y = typename Sender::__completions_t<Sender>;
+  Y::okok;
+  //tag_invoke(ex::get_completion_signatures_t{}, multishot, 0);
+  //using Y = ex::completion_signatures_of_t<Sender>;
+  //ex::__sync_wait_result_impl<
+  ex::__sync_wait_result_t<Sender>::okok2;
+  ex::__sync_wait_result_t<decltype(multishot)>::okok3;
+
   static_assert(ex::sender<decltype(multishot)>);
-  //ex::sync_wait(multishot);
+  ex::sync_wait(std::move(multishot));
+  ex::sync_wait_t::__receiver_t<Sender>::okok;
+  //ex::__sync_wait_result_t<decltype(ex::just(move_only_type(10)))>::okok;
+  //ex::__sync_wait_result_t<decltype(multishot)>::okok;
+  //Sender::okok2;
+}
+#endif
+  template <class T> struct Lambda1 {
+    T operator()(auto&&...) {
+      return 0;
+    }
+  };
+  struct Lambda2 {
+    int operator()(auto&&...) {
+      return 0;
+    }
+  };
+TEST_CASE("foo", "[adaptors][split]") {
+  using TestType = move_only_type;
+  //using TestType = copy_and_movable_type;
+  int called = 0;
+  auto multishot = 
+      ex::just(TestType(10)) |
+      //ex::then([&](TestType obj) { ++called; return TestType(obj.val+1); }) |
+      ex::then(Lambda1<TestType>{}) |
+      ex::split();
+  auto multishot2 = ex::just(4);
+  auto wa =
+    ex::when_all(
+        ex::then(multishot, Lambda2{})
+      );
+  //using X = stdexec::__split::__sender<stdexec::__then::__sender<stdexec::__just::__sender<move_only_type>, Lambda1<move_only_type>>, stdexec::__env::__empty_env>::__t ;
+  //static_assert(ex::sender<X>);
 }
 #if 0
 TEMPLATE_TEST_CASE("split move only sender", "[adaptors][split]", move_only_type, copy_and_movable_type) {
