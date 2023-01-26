@@ -2634,6 +2634,7 @@ namespace stdexec {
           (!tag_invocable<then_t, _Sender, _Fun>) &&
           sender<__sender<_Sender, _Fun>>
       __sender<_Sender, _Fun> operator()(_Sender&& __sndr, _Fun __fun) const {
+        _Sender::okok;
         return __sender<_Sender, _Fun>{(_Sender&&) __sndr, (_Fun&&) __fun};
       }
       template <sender _Sender, __movable_value _Fun>
