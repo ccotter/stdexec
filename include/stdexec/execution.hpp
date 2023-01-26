@@ -3246,6 +3246,7 @@ namespace stdexec {
           using __completions_t =
             make_completion_signatures<
               __copy_cvref_t<_Self, _Sender>,
+              //_Sender,
               __env_t<__make_dependent_on<_Env, _Self>>,
               completion_signatures<set_error_t(const std::exception_ptr&),
                                     set_stopped_t()>, // NOT TO SPEC
@@ -3267,10 +3268,7 @@ namespace stdexec {
 
           template <__decays_to<__t> _Self, class _OtherEnv>
             friend auto tag_invoke(get_completion_signatures_t, _Self&&, _OtherEnv)
-              -> __completions_t<_Self> { _Self::okok; }
-          //template <class _OtherEnv>
-          //  friend auto tag_invoke(get_completion_signatures_t, __t, _OtherEnv)
-          //    -> __completions_t<__t>;
+              -> __completions_t<_Self>;
 
           friend auto tag_invoke(get_attrs_t, const __t& __self) noexcept { // TODO - return lvalue ref
             return __self.__shared_state_->__attrs_;

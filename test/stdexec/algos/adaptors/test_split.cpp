@@ -375,8 +375,19 @@ TEST_CASE("foo", "[adaptors][split]") {
   static_assert(ex::sender<X>);
 }
 #endif
+TEST_CASE("split move only into then", "[adaptors][split]") {
+  SECTION("split sender is rvalue") {
+    int counter{};
+    auto snd = ex::split(ex::just(move_only_type{0})) | ex::then([&](const move_only_type&) { counter++; return counter; });
+  }
+  SECTION("split sender is lvalue") {
+    int counter{};
+    auto multishot = ex::split(ex::just(move_only_type{0}));
+    auto snd = multishot | ex::then([&](const move_only_type&) { counter++; return counter; });
+  }
+}
 #if 0
-TEMPLATE_TEST_CASE("split move only sender", "[adaptors][split]", move_only_type, copy_and_movable_type) {
+TEMPLATE_TEST_CASE("split move-only and copyable senders", "[adaptors][split]", move_only_type, copy_and_movable_type) {
   int called = 0;
   auto multishot = 
       ex::just(TestType(10)) |
