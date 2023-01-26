@@ -2634,7 +2634,6 @@ namespace stdexec {
           (!tag_invocable<then_t, _Sender, _Fun>) &&
           sender<__sender<_Sender, _Fun>>
       __sender<_Sender, _Fun> operator()(_Sender&& __sndr, _Fun __fun) const {
-        _Sender::okok;
         return __sender<_Sender, _Fun>{(_Sender&&) __sndr, (_Fun&&) __fun};
       }
       template <sender _Sender, __movable_value _Fun>
@@ -3268,7 +3267,10 @@ namespace stdexec {
 
           template <__decays_to<__t> _Self, class _OtherEnv>
             friend auto tag_invoke(get_completion_signatures_t, _Self&&, _OtherEnv)
-              -> __completions_t<_Self>;
+              -> __completions_t<_Self> { _Self::okok; }
+          //template <class _OtherEnv>
+          //  friend auto tag_invoke(get_completion_signatures_t, __t, _OtherEnv)
+          //    -> __completions_t<__t>;
 
           friend auto tag_invoke(get_attrs_t, const __t& __self) noexcept { // TODO - return lvalue ref
             return __self.__shared_state_->__attrs_;
