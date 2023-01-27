@@ -470,6 +470,7 @@ namespace exec {
           if constexpr (std::unstoppable_token<decltype(stoken)>) {
             stdexec::set_value((Receiver &&) op.receiver_);
           } else if (stoken.stop_requested()) {
+            Receiver::okok2;
             stdexec::set_stopped((Receiver &&) op.receiver_);
           } else {
             stdexec::set_value((Receiver &&) op.receiver_);

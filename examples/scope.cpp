@@ -28,77 +28,28 @@
 using namespace stdexec;
 using stdexec::sync_wait;
 
-class noop_receiver : receiver_adaptor<noop_receiver> {
-  friend receiver_adaptor<noop_receiver>;
-  template <class... _As>
-    void set_value(_As&&... ) noexcept {
-    }
-  void set_error(std::exception_ptr) noexcept {
-  }
-  void set_stopped() noexcept {
-  }
-  auto get_env() const& {
-    return exec::make_env(exec::with(get_stop_token, stdexec::never_stop_token{}));
-  }
-};
 
 int main() {
   exec::static_thread_pool ctx{1};
   exec::async_scope scope;
 
+  struct Lambda {
+    void operator()() const noexcept {
+
+    }
+  };
+
   scheduler auto sch = ctx.get_scheduler();                               // 1
-
-  sender auto begin = schedule(sch);                                      // 2
-
-  sender auto printVoid = then(begin,
-    []()noexcept { printf("void\n"); });                                  // 3
-
   sender auto printEmpty = then(on(sch, scope.on_empty()),
-    []()noexcept{ printf("scope is empty\n"); });                         // 4
+    Lambda{});
 
   printf("\n"
     "spawn void\n"
     "==========\n");
 
-  scope.spawn(printVoid);                                                 // 5
-
-  sync_wait(printEmpty);
-
-  printf("\n"
-    "spawn void and 42\n"
-    "=================\n");
-
-  sender auto fortyTwo = then(begin, []()noexcept {return 42;});          // 6
-
-  scope.spawn(printVoid);                                                 // 7
-
-  sender auto fortyTwoFuture = scope.spawn_future(fortyTwo);              // 8
-
-  sender auto printFortyTwo = then(std::move(fortyTwoFuture),
-    [](int fortyTwo)noexcept{ printf("%d\n", fortyTwo); });               // 9
-
-  sender auto allDone = then(
-    when_all(printEmpty, std::move(printFortyTwo)),
-    [](auto&&...)noexcept{printf("\nall done\n");});                      // 10
-
-  sync_wait(std::move(allDone));
-
-  {
-    sender auto nest = scope.nest(begin);
-    (void)nest;
-  }
-  sync_wait(scope.on_empty());
-
-  {
-    sender auto nest = scope.nest(begin);
-    auto op = connect(std::move(nest), noop_receiver{});
-    (void)op;
-  }
-  sync_wait(scope.on_empty());
-
-  {
-    sender auto nest = scope.nest(begin);
-    sync_wait(std::move(nest));
-  }
-  sync_wait(scope.on_empty());
+  //sync_wait(printEmpty);
+  //sender auto allDone = when_all(printEmpty);
+  //decltype(allDone)::okok;
+  sender auto allDone = stdexec::__when_all::when_all_t::__sender_t<decltype(printEmpty)&>{printEmpty};
+  //sync_wait(std::move(allDone));
 }

@@ -275,12 +275,6 @@ namespace stdexec {
 
       template <class _T>
       void __check_sender_version() {
-        if constexpr (!enable_sender<_T>) {
-          __update_sender_type_to_p2300r7_by_adding_enable_sender_trait<_T>();
-        }
-        if constexpr (!tag_invocable<get_env_t, const _T&>) {
-          __update_sender_type_to_p2300r7_by_adding_get_env<_T>();
-        }
       }
 
     } // namespace __r5_support
@@ -633,6 +627,8 @@ namespace stdexec {
 
   template <class _Receiver>
     concept receiver =
+      // Uncommenting this triggers the gcc vs clang difference in behavior
+      (!std::same_as<remove_cvref_t<_Receiver>, no_env>) &&
       environment_provider<__cref_t<_Receiver>> &&
       move_constructible<remove_cvref_t<_Receiver>> &&
       constructible_from<remove_cvref_t<_Receiver>, _Receiver>;
@@ -5031,6 +5027,7 @@ namespace stdexec {
             std::visit(__complete_fn{set_error, __recvr_}, __errors_);
             break;
           case __stopped:
+            //_Receiver::okok2;
             stdexec::set_stopped((_Receiver&&) __recvr_);
             break;
           default:
@@ -5052,6 +5049,7 @@ namespace stdexec {
     template <std::size_t _Index, class _ReceiverId, class _ValuesTuple, class _ErrorsVariant>
       struct __receiver {
         using _Receiver = stdexec::__t<_ReceiverId>;
+        static_assert(!std::same_as<_Receiver, no_env>);
 
         struct __t {
           using __id = __receiver;
@@ -5154,6 +5152,8 @@ namespace stdexec {
         using typename _Traits::__completions;
         using typename _Traits::__values_tuple;
         using typename _Traits::__errors_variant;
+
+        static_assert(!std::same_as<_Receiver, no_env>);
 
         template <std::size_t _Index>
           using __receiver =
@@ -5307,14 +5307,14 @@ namespace stdexec {
             std::index_sequence_for<_Senders...>,
             __id<decay_t<_Senders>>...>>;
 
-      template <sender... _Senders>
+      /*template <sender... _Senders>
           requires tag_invocable<when_all_t, _Senders...> &&
             sender<tag_invoke_result_t<when_all_t, _Senders...>>
         auto operator()(_Senders&&... __sndrs) const
           noexcept(nothrow_tag_invocable<when_all_t, _Senders...>)
           -> tag_invoke_result_t<when_all_t, _Senders...> {
           return tag_invoke(*this, (_Senders&&) __sndrs...);
-        }
+        }*/
 
       template <sender... _Senders>
           requires (!tag_invocable<when_all_t, _Senders...>) &&
