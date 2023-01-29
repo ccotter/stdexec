@@ -23,6 +23,11 @@
 
 #include <cstdio>
 
+struct Lambda {
+  void operator()(auto&&...) const noexcept {
+  }
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 // Example code:
 using namespace stdexec;
@@ -80,7 +85,7 @@ int main() {
 
   sender auto allDone = then(
     when_all(printEmpty, std::move(printFortyTwo)),
-    [](auto&&...)noexcept{printf("\nall done\n");});                      // 10
+    Lambda{});
 
   sync_wait(std::move(allDone));
 
@@ -105,6 +110,10 @@ int main() {
 }
 #endif
 void fn() {
+  static_assert(receiver<Lambda>);
   using X = stdexec::__compl_sigs::__env_promise<stdexec::__env::__empty_env>;
-  static_assert(stdexec::receiver<X>);
+  using Y0 = stdexec::_Y<stdexec::__compl_sigs::__env_promise<stdexec::__env::__empty_env> >;
+  using Y = stdexec::__when_all::__receiver<1, Y0, std::tuple<std::optional<std::tuple<> >, std::optional<std::tuple<> > >, std::variant<std::__exception_ptr::exception_ptr> >::__t;
+  //Y0::okok;
+  //static_assert(stdexec::receiver<X>);
 }

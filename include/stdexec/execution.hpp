@@ -655,6 +655,7 @@ namespace stdexec {
     concept receiver =
       // NOT TO SPEC:
       tag_invocable<get_env_t, __cref_t<_Receiver>> &&
+      //!same_as<__env_promise<__empty_env>, _Receiver> &&
       environment_provider<__cref_t<_Receiver>> &&
       move_constructible<remove_cvref_t<_Receiver>> &&
       constructible_from<remove_cvref_t<_Receiver>, _Receiver>;
@@ -4182,7 +4183,7 @@ namespace stdexec {
           template <class _Receiver>
             using __operation = stdexec::__t<__operation<stdexec::__id<_Receiver>>>;
 
-          template <class _Receiver>
+          template <receiver _Receiver>
           friend __operation<_Receiver>
           tag_invoke(connect_t, const __schedule_task& __self, _Receiver __rcvr) {
             return __self.__connect_((_Receiver &&) __rcvr);
@@ -4509,7 +4510,7 @@ namespace stdexec {
           _Attrs __attrs_;
           _Sender __sndr_;
 
-          template <__decays_to<__t> _Self, class _Receiver>
+          template <__decays_to<__t> _Self, receiver _Receiver>
             requires sender_to<__copy_cvref_t<_Self, _Sender>, _Receiver>
           friend auto tag_invoke(connect_t, _Self&& __self, _Receiver __rcvr)
               -> stdexec::__t<__operation1<_SchedulerId, stdexec::__id<__copy_cvref_t<_Self, _Sender>>, stdexec::__id<_Receiver>>> {
