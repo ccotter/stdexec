@@ -653,6 +653,8 @@ namespace stdexec {
 
   template <class _Receiver>
     concept receiver =
+      // NOT TO SPEC:
+      tag_invocable<get_env_t, __cref_t<_Receiver>> &&
       environment_provider<__cref_t<_Receiver>> &&
       move_constructible<remove_cvref_t<_Receiver>> &&
       constructible_from<remove_cvref_t<_Receiver>, _Receiver>;

@@ -42,6 +42,7 @@ class noop_receiver : receiver_adaptor<noop_receiver> {
   }
 };
 
+#if 1
 int main() {
   exec::static_thread_pool ctx{1};
   exec::async_scope scope;
@@ -101,4 +102,9 @@ int main() {
     sync_wait(std::move(nest));
   }
   sync_wait(scope.on_empty());
+}
+#endif
+void fn() {
+  using X = stdexec::__compl_sigs::__env_promise<stdexec::__env::__empty_env>;
+  static_assert(stdexec::receiver<X>);
 }
