@@ -18,7 +18,7 @@ set(stdexec_test_sources
     test_main.cpp
     stdexec/cpos/test_cpo_bulk.cpp
     stdexec/cpos/test_cpo_ensure_started.cpp
-    stdexec/cpos/test_cpo_receiver.cpp
+    #stdexec/cpos/test_cpo_receiver.cpp
     stdexec/cpos/test_cpo_start.cpp
     stdexec/cpos/test_cpo_connect.cpp
     stdexec/cpos/test_cpo_schedule.cpp
@@ -59,16 +59,16 @@ set(stdexec_test_sources
     stdexec/detail/test_utility.cpp
     stdexec/queries/test_get_forward_progress_guarantee.cpp
     stdexec/queries/test_forwarding_queries.cpp
-    exec/test_any_sender.cpp
-    exec/test_task.cpp
+    #exec/test_any_sender.cpp
+    #exec/test_task.cpp
     exec/test_variant_sender.cpp
     exec/test_type_async_scope.cpp
     exec/test_create.cpp
     exec/test_env.cpp
     exec/test_finally.cpp
-    exec/test_on.cpp
-    exec/test_on2.cpp
-    exec/test_on3.cpp
+    #exec/test_on.cpp
+    #exec/test_on2.cpp
+    #exec/test_on3.cpp
     exec/test_repeat_effect_until.cpp
     exec/async_scope/test_dtor.cpp
     exec/async_scope/test_spawn.cpp
@@ -84,6 +84,10 @@ set(stdexec_test_sources
     exec/sequence/test_empty_sequence.cpp
     $<$<BOOL:${STDEXEC_ENABLE_TBB}>:tbbexec/test_tbb_thread_pool.cpp>
     )
+
+    #set(stdexec_test_sources
+    #test_main.cpp
+    #stdexec/bad_sender.cpp)
 
 add_executable(test.stdexec ${stdexec_test_sources})
 

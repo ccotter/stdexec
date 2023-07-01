@@ -81,11 +81,76 @@
 
 #define STDEXEC_LEGACY_R5_CONCEPTS() 1
 
+#include <string>
+#include <unordered_map>
+#include <iostream>
+
 STDEXEC_PRAGMA_PUSH()
 STDEXEC_PRAGMA_IGNORE("-Wundefined-inline")
 STDEXEC_PRAGMA_IGNORE("-Wundefined-internal")
 
 namespace stdexec {
+
+  using TrackingMap = std::unordered_map<std::string, std::atomic<int>>;
+  template <class T = int>
+  TrackingMap& get_tracking_map() {
+    static TrackingMap m;
+    return m;
+  }
+
+  template <class T> struct decay_non_lvalue_ref { using type = T; };
+  template <class T> struct decay_non_lvalue_ref<T&> { using type = T&; };
+  template <class T> struct decay_non_lvalue_ref<T&&> { using type = T; };
+  template <class T> struct decay_non_lvalue_ref<const T&&> { using type = T; };
+  template <class T> struct decay_non_lvalue_ref<const T&> { using type = T; };
+  template <class T> using decay_non_lvalue_ref_t = typename decay_non_lvalue_ref<T>::type;
+
+  template <template <typename...> class Tuple>
+  struct decay_non_lvalue_ref_tuple {
+    template <typename... Ts>
+    using apply = Tuple<decay_non_lvalue_ref_t<Ts>...>;
+  };
+
+  template <class Receiver, class CPO, class... Ts>
+  void track_complete_value() {
+    auto& m = get_tracking_map();
+    std::string receiver_type = typeid(Receiver).name();
+    std::string values = typeid(std::tuple<CPO, decay_non_lvalue_ref_t<Ts>...>).name();
+    std::string combined = receiver_type + " / " + values;
+    if (combined.find("__start_detached") != std::string::npos) return;
+    if (combined.find("any_receiver") != std::string::npos) return;
+    if (combined.find("sink_receiver") != std::string::npos) return;
+    if (combined.find("__execute_") != std::string::npos && combined.find("__as_receiver") != std::string::npos) return;
+    std::cout << "set_value called for receiver=" << receiver_type << " values=" << values << "\n";
+    if (m[combined] == 0) {
+      std::cout << "Oops!\n";
+      throw 5;
+    }
+    --m[combined];
+  }
+
+  template <class Sender, class Receiver, class T>
+  void track_connect_one_type() {
+
+    auto& m = get_tracking_map();
+    std::string sender_type = typeid(Sender).name();
+    std::string receiver_type = typeid(Receiver).name();
+    std::string values = typeid(T).name();
+    std::string combined = receiver_type + " / " + values;
+    ++m[combined];
+    std::cout << "connect called for sender=" << sender_type << " receiver=" << receiver_type << " values=" << values << "\n";
+  }
+
+  template <class Sender, class Receiver, class T>
+  struct track_connect_impl;
+
+  template <class Sender, class Receiver, class... Ts>
+  struct track_connect_impl<Sender, Receiver, std::variant<Ts...>> {
+    void operator()() {
+      (track_connect_one_type<Sender, Receiver, Ts>(), ...);
+    }
+  };
+
   // [exec.queries.queryable]
   template <class T>
   concept queryable = destructible<T>;
@@ -522,6 +587,7 @@ namespace stdexec {
         void
         operator()(_Receiver&& __rcvr, _As&&... __as) const noexcept {
         static_assert(nothrow_tag_invocable<set_value_t, _Receiver, _As...>);
+        track_complete_value<_Receiver, set_value_t, _As...>();
         (void) tag_invoke(set_value_t{}, (_Receiver&&) __rcvr, (_As&&) __as...);
       }
     };
@@ -537,6 +603,7 @@ namespace stdexec {
         void
         operator()(_Receiver&& __rcvr, _Error&& __err) const noexcept {
         static_assert(nothrow_tag_invocable<set_error_t, _Receiver, _Error>);
+        track_complete_value<_Receiver, set_error_t, _Error>();
         (void) tag_invoke(set_error_t{}, (_Receiver&&) __rcvr, (_Error&&) __err);
       }
     };
@@ -552,6 +619,7 @@ namespace stdexec {
         void
         operator()(_Receiver&& __rcvr) const noexcept {
         static_assert(nothrow_tag_invocable<set_stopped_t, _Receiver>);
+        track_complete_value<_Receiver, set_stopped_t>();
         (void) tag_invoke(set_stopped_t{}, (_Receiver&&) __rcvr);
       }
     };
@@ -1050,6 +1118,24 @@ namespace stdexec {
 
   using __get_completion_signatures::get_completion_signatures_t;
   inline constexpr get_completion_signatures_t get_completion_signatures{};
+
+  template <class T> struct extract_one;
+  template <class T> using extract_one_t = typename extract_one<T>::type;
+
+  template <class Fn, class... Ts>
+  struct extract_one<Fn(Ts...)> { using type = std::tuple<Fn, decay_non_lvalue_ref_t<Ts>...>; };
+
+  template <class T> struct extract_as_tuple;
+  template <class T> using extract_as_tuple_t = typename extract_as_tuple<T>::type;
+
+  template <class... Sigs>
+  struct extract_as_tuple<completion_signatures<Sigs...>> {
+    using type = std::variant<typename extract_one<Sigs>::type...>;
+  };
+  template <>
+  struct extract_as_tuple<dependent_completion_signatures<no_env>> {
+    using type = std::variant<dependent_completion_signatures<no_env>>;
+  };
 
   /////////////////////////////////////////////////////////////////////////////
   // [execution.senders]
@@ -1727,6 +1813,14 @@ namespace stdexec {
       template <class _Sender, class _Receiver>
       using __select_impl_t = decltype(__select_impl<_Sender, _Receiver>());
 
+      template <class Sender, class Receiver>
+      static void track_connect(Sender&, Receiver&) {
+        //using sigs = typename Sender::completion_signatures;
+        using sigs = decltype(get_completion_signatures(std::declval<Sender>(), __default_env{}));
+        using extracted_sigs = extract_as_tuple_t<sigs>;
+        track_connect_impl<Sender, Receiver, extracted_sigs>{}();
+      }
+
       template <sender _Sender, receiver _Receiver>
         requires __connectable_with_tag_invoke<_Sender, _Receiver>
               || __callable<__connect_awaitable_t, _Sender, _Receiver>
@@ -1734,6 +1828,9 @@ namespace stdexec {
       auto operator()(_Sender&& __sndr, _Receiver&& __rcvr) const
         noexcept(__nothrow_callable<__select_impl_t<_Sender, _Receiver>>)
           -> __call_result_t<__select_impl_t<_Sender, _Receiver>> {
+
+        track_connect(__sndr, __rcvr);
+
         if constexpr (__connectable_with_tag_invoke<_Sender, _Receiver>) {
           static_assert(
             operation_state<tag_invoke_result_t<connect_t, _Sender, _Receiver>>,
