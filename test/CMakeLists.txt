@@ -85,9 +85,9 @@ set(stdexec_test_sources
     $<$<BOOL:${STDEXEC_ENABLE_TBB}>:tbbexec/test_tbb_thread_pool.cpp>
     )
 
-    #set(stdexec_test_sources
-    #test_main.cpp
-    #stdexec/bad_sender.cpp)
+    #set(stdexec_test_sources test_main.cpp stdexec/bad_sender.cpp)
+    set(stdexec_test_sources test_main.cpp stdexec/bad_sender2.cpp)
+    set(stdexec_test_sources test_main.cpp exec/test_create.cpp)
 
 add_executable(test.stdexec ${stdexec_test_sources})
 

@@ -193,3 +193,51 @@ TEST_CASE("then can be customized", "[adaptors][then]") {
            | ex::then([](std::string x) { return x + ", world"; });
   wait_for_value(std::move(snd), std::string{"hallo"});
 }
+
+struct int_receiver {
+  using is_receiver = void;
+
+  friend auto tag_invoke(ex::set_value_t, int_receiver&& self, double val) noexcept {
+    *self.val = val;
+  }
+
+  int* val;
+};
+
+struct int_ref_sender {
+  using is_sender = void;
+  using completion_signatures =
+    ex::completion_signatures<ex::set_value_t(double)>;
+
+  template <class Receiver>
+  struct operation {
+    Receiver rcvr_;
+
+    friend void tag_invoke(ex::start_t, operation& self) noexcept {
+      ex::set_value(std::move(self.rcvr_), 10);
+    }
+  };
+
+  template <class Receiver>
+  friend auto tag_invoke(ex::connect_t, int_ref_sender&& self, Receiver&& rcvr)
+    -> operation<std::decay_t<Receiver>> {
+    return {std::forward<Receiver>(rcvr)};
+  }
+
+  friend empty_env tag_invoke(ex::get_env_t, const int_ref_sender&) noexcept {
+    return {};
+  }
+};
+
+TEST_CASE("test mismatched receiver", "[adaptors][then]") {
+  static double x;
+  x = 100;
+  //auto snd = ex::just () | ex::then([]() noexcept -> double& { return x; });
+  auto snd = int_ref_sender{};
+  static_assert(ex::sender<decltype(snd)>);
+  static_assert(ex::receiver<int_receiver>);
+  int output = -1;
+  auto op = ex::connect(std::move(snd), int_receiver{&output});
+  ex::start(op);
+  CHECK(output == 100);
+}

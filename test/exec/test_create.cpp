@@ -18,6 +18,7 @@
 #include <stdexec/execution.hpp>
 #include <exec/async_scope.hpp>
 #include <exec/create.hpp>
+#include <exec/finally.hpp>
 #include <exec/static_thread_pool.hpp>
 
 #include <optional>
@@ -65,6 +66,24 @@ TEST_CASE_METHOD(
     return exec::create<ex::set_value_t(int)>([a, b, this]<class Context>(Context& ctx) noexcept {
       anIntAPI(a, b, &ctx, [](void* pv, int result) {
         ex::set_value(std::move(static_cast<Context*>(pv)->receiver), (int) result);
+      });
+    });
+  }(1, 2);
+
+  REQUIRE_NOTHROW([&] {
+    auto [res] = stdexec::sync_wait(std::move(snd)).value();
+    CHECK(res == 3);
+  }());
+}
+
+TEST_CASE_METHOD(
+  create_test_fixture,
+  "wrap a create through finally",
+  "[detail][create]") {
+  auto snd = [this](int a, int b) {
+    return exec::create<ex::set_value_t(int)>([a, b, this]<class Context>(Context& ctx) noexcept {
+      anIntAPI(a, b, &ctx, [](void* pv, int result) {
+        ex::set_value(std::move(static_cast<Context*>(pv)->receiver), result);
       });
     });
   }(1, 2);

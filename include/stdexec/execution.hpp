@@ -124,7 +124,7 @@ namespace stdexec {
     std::cout << "set_value called for receiver=" << receiver_type << " values=" << values << "\n";
     if (m[combined] == 0) {
       std::cout << "Oops!\n";
-      throw 5;
+      //std::terminate();
     }
     --m[combined];
   }
