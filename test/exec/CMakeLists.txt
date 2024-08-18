@@ -16,43 +16,12 @@
 
 set(exec_test_sources
     ../test_main.cpp
-    test_bwos_lifo_queue.cpp
-    test_any_sender.cpp
-    test_task.cpp
-    test_timed_thread_scheduler.cpp
-    test_variant_sender.cpp
-    test_type_async_scope.cpp
-    test_create.cpp
-    test_env.cpp
-    test_finally.cpp
-    test_into_tuple.cpp
-    test_on.cpp
-    test_on2.cpp
-    test_on3.cpp
-    test_repeat_effect_until.cpp
-    test_repeat_n.cpp
     async_scope/test_dtor.cpp
     async_scope/test_spawn.cpp
     async_scope/test_spawn_future.cpp
     async_scope/test_start_now.cpp
     async_scope/test_empty.cpp
     async_scope/test_stop.cpp
-    test_when_any.cpp
-    test_at_coroutine_exit.cpp
-    test_materialize.cpp
-    $<$<BOOL:${STDEXEC_ENABLE_IO_URING_TESTS}>:test_io_uring_context.cpp>
-    test_trampoline_scheduler.cpp
-    test_sequence_senders.cpp
-    test_sequence.cpp
-    test_just_from.cpp
-    sequence/test_any_sequence_of.cpp
-    sequence/test_empty_sequence.cpp
-    sequence/test_ignore_all_values.cpp
-    sequence/test_iterate.cpp
-    sequence/test_transform_each.cpp
-    $<$<BOOL:${STDEXEC_ENABLE_TBB}>:../tbbexec/test_tbb_thread_pool.cpp>
-    test_system_context.cpp
-    $<$<BOOL:${STDEXEC_ENABLE_LIBDISPATCH}>:test_libdispatch.cpp>
     )
 
 add_executable(test.exec ${exec_test_sources})

@@ -71,4 +71,21 @@ namespace {
     REQUIRE(executedB);
   }
 
+  TEST_CASE("start_now two on pool2", "[async_scope][start_now]") {
+    bool executedA{false};
+    bool executedB{false};
+    async_scope scope;
+    exec::static_thread_pool pool{2};
+
+    // This will be a blocking call
+    auto stg = start_now(
+      scope,
+      ex::schedule(pool.get_scheduler()) | ex::then([&]() noexcept { executedA = true; }),
+      ex::schedule(pool.get_scheduler()) | ex::then([&]() noexcept { executedB = true; }));
+    stg.request_stop();
+    sync_wait(ex::on(pool.get_scheduler(), stg.async_wait()));
+    REQUIRE(executedA);
+    REQUIRE(executedB);
+  }
+
 } // namespace

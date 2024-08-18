@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 #include <exec/async_scope.hpp>
 #include <exec/env.hpp>
+#include <exec/static_thread_pool.hpp>
 #include "test_common/schedulers.hpp"
 #include "test_common/receivers.hpp"
 #include "test_common/type_helpers.hpp"
@@ -434,5 +435,36 @@ namespace {
     // auto op = ex::connect(std::move(snd), expect_stopped_receiver{});
     // ex::start(op);
     expect_empty(scope);
+  }
+
+  TEST_CASE("Foo", "[async_scope][spawn_future]") {
+    async_scope scope;
+
+    bool cancelled1{false};
+    bool cancelled2{false};
+
+    exec::static_thread_pool pool{2};
+    auto s = ex::schedule(pool.get_scheduler());
+
+    {
+      ex::sender auto snd1 = scope.spawn_future(ex::on(
+        pool.get_scheduler(),
+        ex::just() //
+          | ex::let_stopped([&] {
+              cancelled1 = true;
+              return ex::just();
+            })));
+      ex::sender auto snd2 = scope.spawn_future(ex::on(
+        pool.get_scheduler(),
+        ex::just() //
+          | ex::let_stopped([&] {
+              cancelled2 = true;
+              return ex::just();
+            })));
+      (void) snd1;
+      (void) snd2;
+    }
+
+    ex::sync_wait(scope.on_empty());
   }
 } // namespace
