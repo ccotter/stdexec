@@ -2,20 +2,14 @@
 #include "../../relacy/relacy_cli.hpp"
 
 #include <stdexec/execution.hpp>
-#include <exec/async_scope.hpp>
 #include <exec/static_thread_pool.hpp>
-#include <test_common/schedulers.hpp>
-
-#include <chrono>
-#include <random>
-#include <iostream>
+//#include <test_common/schedulers.hpp>
 
 using rl::nvar;
 using rl::nvolatile;
 using rl::mutex;
 
 namespace ex = stdexec;
-using exec::async_scope;
 
 struct split_bug : rl::test_suite<split_bug, 1>
 {
