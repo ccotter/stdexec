@@ -143,32 +143,34 @@ namespace {
 
 #if !STDEXEC_STD_NO_EXCEPTIONS()
   TEST_CASE("spawn_future with throwing copy", "[async_scope][spawn_future]") {
-    async_scope scope;
     exec::static_thread_pool pool{2};
+    {
+      async_scope scope;
 
-    struct throwing_copy {
-      throwing_copy() = default;
-
-      throwing_copy(const throwing_copy&) {
-        throw std::logic_error("cannot copy");
+      struct throwing_copy {
+        throwing_copy() = default;
+  
+        throwing_copy(const throwing_copy&) {
+          throw std::logic_error("cannot copy");
+        }
+      };
+  
+      ex::sender auto snd = scope.spawn_future(
+        ex::starts_on(pool.get_scheduler(), exec::just_from([](auto sink) {
+                        return sink(throwing_copy());
+                      })));
+      STDEXEC_TRY {
+        sync_wait(std::move(snd));
+        FAIL("Exceptions should have been thrown");
       }
-    };
-
-    ex::sender auto snd = scope.spawn_future(
-      ex::starts_on(pool.get_scheduler(), exec::just_from([](auto sink) {
-                      return sink(throwing_copy());
-                    })));
-    STDEXEC_TRY {
-      sync_wait(std::move(snd));
-      FAIL("Exceptions should have been thrown");
+      STDEXEC_CATCH(const std::logic_error& e) {
+        SUCCEED("correct exception caught");
+      }
+      STDEXEC_CATCH_ALL {
+        FAIL("invalid exception caught");
+      }
+      sync_wait(scope.on_empty());
     }
-    STDEXEC_CATCH(const std::logic_error& e) {
-      SUCCEED("correct exception caught");
-    }
-    STDEXEC_CATCH_ALL {
-      FAIL("invalid exception caught");
-    }
-    sync_wait(scope.on_empty());
   }
 #endif // !STDEXEC_STD_NO_EXCEPTIONS()
 
