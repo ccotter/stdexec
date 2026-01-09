@@ -1,6 +1,8 @@
 #include "../../relacy/relacy_std.hpp"
 #include "../../relacy/relacy_cli.hpp"
 
+#include "stdexec_relacy.hpp"
+
 #include <stdexec/execution.hpp>
 #include <exec/static_thread_pool.hpp>
 

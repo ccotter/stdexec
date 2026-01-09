@@ -1,6 +1,8 @@
 #include "../../relacy/relacy_std.hpp"
 #include "../../relacy/relacy_cli.hpp"
 
+#include "stdexec_relacy.hpp"
+
 #include <stdexec/execution.hpp>
 #include <exec/async_scope.hpp>
 #include <exec/static_thread_pool.hpp>
@@ -49,7 +51,24 @@ struct attach_async_scope_future : rl::test_suite<attach_async_scope_future, 1> 
   }
 };
 
+
 struct async_scope_future_set_result : rl::test_suite<async_scope_future_set_result, 1> {
+  static size_t const dynamic_thread_count = 1;
+
+  void thread(unsigned) {
+    exec::single_thread_context ctx;
+    ex::scheduler auto sch = ctx.get_scheduler();
+
+    exec::async_scope scope;
+    ex::sender auto begin = ex::schedule(sch);
+    ex::sender auto ftr = scope.spawn_future(begin | ex::then([] { return 0; }));
+    ex::sync_wait(std::move(ftr));
+    ex::sync_wait(scope.on_empty());
+  }
+};
+
+
+struct async_scope_future_set_result_throwing : rl::test_suite<async_scope_future_set_result, 1> {
   static size_t const dynamic_thread_count = 1;
 
   void thread(unsigned) {
@@ -64,22 +83,27 @@ struct async_scope_future_set_result : rl::test_suite<async_scope_future_set_res
     exec::single_thread_context ctx;
     ex::scheduler auto sch = ctx.get_scheduler();
 
-    exec::async_scope scope;
-    ex::sender auto begin = ex::schedule(sch);
-    ex::sender auto ftr = scope.spawn_future(begin | ex::then([] { return throwing_copy(); }));
-    bool threw = false;
-    STDEXEC_TRY {
-      ex::sync_wait(std::move(ftr));
-      RL_ASSERT(false);
+    {
+      // Ensure scope is destroyed before ctx
+      exec::async_scope scope;
+      ex::sender auto begin = ex::schedule(sch);
+      ex::sender auto ftr = scope.spawn_future(begin | ex::then([] { return throwing_copy(); }));
+      bool threw = false;
+      STDEXEC_TRY {
+        ex::sync_wait(std::move(ftr));
+        RL_ASSERT(false);
+      }
+      STDEXEC_CATCH(const std::logic_error&) {
+        threw = true;
+      }
+      STDEXEC_CATCH_ALL {
+        RL_ASSERT(false);
+      }
+      RL_ASSERT(threw);
+      ex::sync_wait(scope.on_empty());
+      // scope destructor runs here
     }
-    STDEXEC_CATCH(const std::logic_error&) {
-      threw = true;
-    }
-    STDEXEC_CATCH_ALL {
-      RL_ASSERT(false);
-    }
-    RL_ASSERT(threw);
-    ex::sync_wait(scope.on_empty());
+    // ctx destructor runs here
   }
 };
 
