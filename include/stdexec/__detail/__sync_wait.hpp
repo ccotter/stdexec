@@ -96,6 +96,7 @@ namespace stdexec {
       void finish() noexcept {
         __loop_.finish();
         __done_.store(true, stdexec::__std::memory_order_release);
+        usleep(rand() % 1000000);
         __done_.notify_all();
       }
 

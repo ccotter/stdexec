@@ -7,7 +7,7 @@ build_dir = build
 
 .SECONDARY:
 
-test_programs = split async_scope
+test_programs = async_scope split sync_wait
 
 test_exe_files = $(foreach name,$(test_programs),$(build_dir)/$(name))
 

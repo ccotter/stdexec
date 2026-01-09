@@ -262,4 +262,17 @@ namespace {
       >);
   }
 
+  TEST_CASE(
+    "sync_wait_cc",
+    "[consumers][sync_wait]") {
+    const int N = getenv("N") ? strtol(getenv("N"), nullptr, 10) : 1;
+    for (int i = 0; i != N; ++i) {
+
+    exec::static_thread_pool pool{3};
+    ex::sender auto sn = ex::schedule(pool.get_scheduler()) | ex::then([] { return 42; });
+    auto [val] = ex::sync_wait(sn).value();
+    (void)val;
+  }
+  }
+
 } // namespace
