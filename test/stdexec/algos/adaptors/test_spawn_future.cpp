@@ -27,6 +27,9 @@
 #include <string>
 #include <thread>
 
+extern "C" void __tsan_simulate_annotate_wait(void*);
+extern "C" void __tsan_simulate_annotate_wake_one(void*);
+
 namespace ex = STDEXEC;
 
 namespace {
@@ -85,13 +88,18 @@ namespace {
     auto future = ex::spawn_future(
       ex::starts_on(pool.get_scheduler(), ex::just() | ex::let_value([&]() noexcept {
                                             waiting = true; // signal we've started running
+                                            __tsan_simulate_annotate_wake_one(&waiting);
                                             waiting.notify_one();
+                                            if (go.load() == false)
+                                              __tsan_simulate_annotate_wait(&go);
                                             go.wait(false);
                                             return ex::just(42, std::string{"hello, world!"});
                                           })),
       null_token{});
 
     // wait for the signal that the spawned work has started running
+    if (waiting.load() == false)
+      __tsan_simulate_annotate_wait(&waiting);
     waiting.wait(false);
 
     std::atomic<bool> firstBranchStarted = false;
@@ -119,6 +127,7 @@ namespace {
           CHECK(!futureCompleted);
           // release the spawned work
           go = true;
+          __tsan_simulate_annotate_wake_one(&go);
           go.notify_one();
         })));
 
@@ -311,6 +320,7 @@ namespace {
         ex::read_env(ex::get_stop_token) | ex::then([&](auto stopToken) noexcept {
           auto callback = [&]() noexcept {
             waitingForStopRequest = true;
+            __tsan_simulate_annotate_wake_one(&waitingForStopRequest);
             waitingForStopRequest.notify_one();
           };
 
@@ -320,8 +330,11 @@ namespace {
           callback_t registeredCallback(std::move(stopToken), std::move(callback));
 
           workStarted = true;
+          __tsan_simulate_annotate_wake_one(&workStarted);
           workStarted.notify_one();
 
+          if (waitingForStopRequest.load() == false)
+            __tsan_simulate_annotate_wait(&waitingForStopRequest);
           waitingForStopRequest.wait(false);
         })),
       scope.get_token(),
@@ -329,6 +342,8 @@ namespace {
 
     CHECK(rsc.allocated() > 0);
 
+    if (workStarted.load() == false)
+      __tsan_simulate_annotate_wait(&workStarted);
     workStarted.wait(false);
 
     future.reset();

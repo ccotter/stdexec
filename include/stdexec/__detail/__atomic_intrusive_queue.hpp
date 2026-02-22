@@ -24,6 +24,9 @@
 #include <cassert>
 #include <cstddef>
 
+extern "C" void __tsan_simulate_annotate_wait(void*);
+extern "C" void __tsan_simulate_annotate_wake_one(void*);
+
 namespace STDEXEC {
 
   // An atomic queue that supports multiple producers and a single consumer.
@@ -50,6 +53,7 @@ namespace STDEXEC {
 
       // There can be only one consumer thread, so we can use notify_one here instead of
       // notify_all:
+      __tsan_simulate_annotate_wake_one(&__head_);
       __head_.notify_one();
       return true;
     }
@@ -57,6 +61,8 @@ namespace STDEXEC {
     STDEXEC_ATTRIBUTE(host, device)
     constexpr void wait_for_item() noexcept {
       // Wait until the queue has an item in it:
+      if (__head_.load() == nullptr)
+        __tsan_simulate_annotate_wait(&__head_);
       __head_.wait(nullptr);
     }
 

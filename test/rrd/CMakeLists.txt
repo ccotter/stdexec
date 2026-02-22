@@ -32,6 +32,7 @@ function(add_relacy_test target_name)
 endfunction()
 
 set(relacy_tests
+  await
   async_scope
   intrusive_mpsc_queue
   split

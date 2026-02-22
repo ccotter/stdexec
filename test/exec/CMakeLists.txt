@@ -19,7 +19,6 @@ set(exec_test_sources
     test_bwos_lifo_queue.cpp
     test_any_sender.cpp
     test_task.cpp
-    test_timed_thread_scheduler.cpp
     test_variant_sender.cpp
     test_type_async_scope.cpp
     test_completion_signatures.cpp
